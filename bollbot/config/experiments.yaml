@@ -1,0 +1,113 @@
+# Pre-registered success criteria for experiments E1-E11 (spec Section 13 and 14).
+# Registered 2026-10-15, before any experiment data was collected.
+#
+# RULES (spec Section 13):
+#   - Do not change a threshold after seeing results. The report prints this file's SHA-256,
+#     so a change is visible.
+#   - A missed target is reported as missed, with the reason; it is not dropped.
+#
+# op: ">=" or "<=". "report" = measured and reported, no pass/fail.
+
+E1:
+  title: Detector quality (held-out Farm D)
+  kpis:
+    map50:            {op: ">=", target: 0.80, label: "mAP@50 (test farm)"}
+    open_boll_recall: {op: ">=", target: 0.85, label: "Open-boll recall"}
+    map50_95:         {op: report, label: "mAP@50-95"}
+  min_images: 1500
+  min_instances_classes_0_4: 300
+
+E2:
+  title: Edge speed (OAK-D / NCNN, 416 px)
+  kpis:
+    fps: {op: ">=", target: 3.0, label: "Throughput (median of runs), FPS"}
+  min_runs: 3
+
+E3:
+  title: Counting accuracy vs hand counts
+  kpis:
+    cart_mape_open:  {op: "<=", target: 15.0, label: "Cart counting error, open bolls (MAPE %)"}
+    phone_mape_open: {op: report, label: "Phone-mode counting error, open bolls (MAPE %)"}
+    scan_min_per_acre: {op: "<=", target: 60.0, label: "Scan time, min/acre"}
+  min_segments: 50
+
+E4:
+  title: Picking-window rule vs oven-dry moisture
+  kpis:
+    test_agreement_pct: {op: ">=", target: 85.0, label: "Agreement on the test half, %"}
+    test_kappa:         {op: report, label: "Cohen's kappa (test half)"}
+  safe_moisture_max_pct: 8.0     # oven class: <= 8 % = safe to pick
+  tune_samples: 45               # first 45 samples (in collection order) tune; the rest test
+  min_samples: 90
+  # Threshold grid searched on the tune half only (spec Section 8):
+  grid:
+    earliest_hour: [9, 10, 11]
+    min_dewpoint_depression_c: [2.0, 3.0, 4.0, 5.0, 6.0]
+    max_rh_pct: [65.0, 70.0, 75.0, 80.0, 85.0]
+    max_rain_last_24h_mm: [1.0, 2.0, 5.0]
+
+E5:
+  title: Depth and localisation
+  kpis:
+    mean_error_cm:  {op: "<=", target: 2.0, label: "Camera 3D error, mean (cm)"}
+    p95_error_cm:   {op: report, label: "Camera 3D error, 95th percentile (cm)"}
+    max_error_cm:   {op: report, label: "Camera 3D error, max (cm)"}
+    arm_within_3cm_pct: {op: ">=", target: 80.0, label: "Arm touches within 3 cm, %"}
+    segment_id_accuracy_pct: {op: ">=", target: 100.0, label: "Segment ID accuracy, %"}
+  min_points: 20
+  min_rows: 10
+
+E6:
+  title: Pest signals and ETL logic
+  kpis:
+    rule_cases_pass_pct: {op: ">=", target: 100.0, label: "Rule test cases passed, %"}
+    rule_cases:          {op: ">=", target: 30, label: "Rule test cases"}
+    camera_precision_5_7: {op: report, label: "Camera vs scouting precision, classes 5-7"}
+    camera_recall_5_7:    {op: report, label: "Camera vs scouting recall, classes 5-7"}
+  min_segments: 40
+
+E7:
+  title: Spot-spray targeting (water + dye)
+  kpis:
+    target_hit_pct:     {op: ">=", target: 90.0, label: "Target cards hit, %"}
+    non_target_hit_pct: {op: "<=", target: 10.0, label: "Non-target cards hit, %"}
+    volume_vs_blanket_pct: {op: "<=", target: 40.0, label: "Volume vs blanket spray, %"}
+  hit_min_deposit_pct: 10.0      # a card is "hit" at >= 10 % of its area covered
+  blanket_ml_per_plant: 27.0
+  plants: 100
+  targets: 30
+
+E8:
+  title: IoT reliability (2 h offline, then reconnect)
+  kpis:
+    lost_messages:          {op: "<=", target: 0, label: "Messages lost"}
+    median_latency_online_s: {op: "<=", target: 10.0, label: "Median sync latency while online (s)"}
+    duplicates_stored:      {op: "<=", target: 0, label: "Duplicates stored by the backend"}
+  min_messages: 1000
+
+E9:
+  title: Farmer usability (Tamil SUS + tasks)
+  kpis:
+    sus_mean:        {op: ">=", target: 68.0, label: "SUS score, mean"}
+    task_completion_pct: {op: ">=", target: 80.0, label: "Task completion, %"}
+  min_participants: 10
+  min_villages: 2
+
+E10:
+  title: Arm demonstrator
+  kpis:
+    success_pct:      {op: ">=", target: 60.0, label: "Pick success (>= 80 % of seed cotton removed), %"}
+    cycle_median_s:   {op: report, label: "Cycle time, median (s) - product need 4 s"}
+    cycle_p90_s:      {op: report, label: "Cycle time, 90th percentile (s)"}
+    trash_pct:        {op: "<=", target: 10.0, label: "Trash in bin, %"}
+    lint_left_pct:    {op: report, label: "Lint left on the boll, %"}
+  success_removed_min_pct: 80.0
+  product_cycle_s: 4.0
+  min_picks: 70
+
+E11:
+  title: Power
+  kpis:
+    runtime_h:   {op: ">=", target: 4.0, label: "Runtime per charge (h)"}
+    mean_power_w: {op: report, label: "Mean power (W) = Wh per hour"}
+  min_days: 2

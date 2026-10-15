@@ -15,9 +15,9 @@ Software for the BollBot Phase II specification: a cotton harvest-timing and pes
 | 7a | Integration with the team backend: MQTT contract `bollbot/v1` extended (scan, pick); cart publishes to the backend broker | `edge/contract.py`, `edge/sync.py` + backend patch | **Done** |
 | 7b | Backend: farm rules (this engine, copied unchanged), advisories + farm status, trap/scouting/confirmation API, hourly forecast worker, farm operators | `backend/src/gossy/farmrules` | **Done** (see `backend/docs/farm-rules.md`) |
 | 7c | Flutter app: Field tab with advice (English/Tamil), picking window, segment readiness map, pest thresholds; trap/scouting/detection entry; farm location and operators (replaces the mock Harvest page) | `lib/ui/field_page.dart`, `lib/core/farm/` | **Done** |
-| 8 | Experiment analysis notebooks E1–E11 | `experiments/` | Next |
+| 8 | Experiment analyses E1–E11: pre-registered targets, one analysis per experiment, `results.md` report, data templates, notebooks | `analysis/`, `experiments/` | **Done** |
 
-**Tests: 149 Python + 94 firmware passing** in this repo (41 core, 13 ML, 19 QA regression, 19 cart, 11 actuator link, 20 harvesting, 13 farm rules, 13 contract/uploader), plus **100 backend contract checks** run against the team backend's own validation code. QA report of 14 Oct 2026: all 16 bugs fixed.
+**Tests: 171 Python + 94 firmware passing** in this repo (41 core, 13 ML, 19 QA regression, 19 cart, 11 actuator link, 20 harvesting, 13 farm rules, 14 contract/uploader, 21 experiment analyses); the backend and app have their own suites (all run in CI). QA report of 14 Oct 2026: all 16 bugs fixed.
 
 ## Module 1 – what is here
 
@@ -226,6 +226,27 @@ The cart now uploads to the backend's broker using the backend's MQTT contract (
 **Proven across both repositories:** `tools/export_contract_samples.py` builds messages with the real cart code. The backend's new test `tests/unit/test_cart_samples.py` runs them through its full ingestion validation. All pass.
 
 Cart setup: in `config/cart.yaml`, set `sync.broker_host`, and put the broker CA at `secrets/broker-ca.crt` and the device password at `secrets/device_password`. Register the cart in the backend as device `cart01`, as you would any device.
+
+## Module 8 – experiment analyses (E1–E11)
+
+Every number the Phase II report quotes comes from here. The success criteria of spec Section 13
+are frozen in `config/experiments.yaml` (registered 15 Oct 2026, before any data); the report
+prints the file's SHA-256, so a change made after seeing results is visible.
+
+| File | Purpose |
+|---|---|
+| `config/experiments.yaml` | Pre-registered targets for E1–E11 |
+| `analysis/common.py` | Result type (MET / MISSED / REPORTED / NOT MEASURED), CSV checks, kappa, Wilson intervals, percentiles |
+| `analysis/e1_e2_e3.py` … `e8_to_e11.py` | One analysis per experiment, reading what the system writes: `eval_test.json` (E1), benchmark JSON (E2), the arm's `picks.csv` (E10), the cart's outbox database (E8), INA219 logs (E11) |
+| `analysis/report.py` | `python -m bollbot.analysis.report` → `experiments/results.md`, `results.json`, `figures/` |
+| `experiments/E#/` | Protocol (README), `*_template` data files, notebook `E#.ipynb` |
+| `experiments/E6/rule_cases.yaml` | 36 rule cases from the published thresholds, run through the real engine (all pass) |
+| `edge/power_log.py` | INA219 battery logger for E11 |
+| `tools/demo_scans.py` | Also the E8 load generator (`--repeat`, `--every`, `--outbox`) |
+
+Rules the code enforces: a missed target stays in the report as MISSED with its value; E4 tunes
+the picking-window thresholds on the first 45 samples only and scores the last 45; below the
+planned sample size the result is computed but flagged; a data problem is reported, never hidden.
 
 ## Run the tests
 

@@ -1,0 +1,208 @@
+# E6 rule test cases (spec Section 13: >= 30 cases, 100 % must pass).
+# Written 2026-10-15 from the PUBLISHED thresholds (spec Section 9, config/etl.yaml sources),
+# not from the code's output. Each case is run through the real engine (core.engine.run_farm).
+#
+# Inputs (all dates relative to the run's "today"):
+#   observations: [{observation, count, units, days_ago=0}]
+#   traps:        [{trap, days_ago, moths}]
+#   scans:        [{row, segment, counts: {class: n}, hours_ago=1}]
+#   confirmations:[{row, segment, class, days_ago=0}]
+# expect:   crossed | not_crossed | insufficient   (the rule's finding)
+# advisory: {type, segments?}  -> an advisory of this type for the rule must exist
+# no_advisory: true            -> no advisory may be issued for this rule
+
+- id: C01
+  rule: aphid
+  source: "AESA-2014: more than 10 % affected plants"
+  observations: [{observation: aphid_infested_plants, count: 2, units: 20}]
+  expect: not_crossed          # exactly 10 % is not 'more than'
+- id: C02
+  rule: aphid
+  source: "AESA-2014: more than 10 % affected plants"
+  observations: [{observation: aphid_infested_plants, count: 3, units: 20}]
+  expect: crossed
+  advisory: {type: PEST_ETL}
+- id: C03
+  rule: aphid
+  source: "AESA-2014 sampling: 20 plants"
+  observations: [{observation: aphid_infested_plants, count: 3, units: 19}]
+  expect: insufficient
+- id: C04
+  rule: jassid
+  source: "AESA-2014: more than 2 per leaf (5 leaves x 5 plants)"
+  observations: [{observation: jassid_per_leaf, count: 50, units: 25}]
+  expect: not_crossed          # 2.0 per leaf
+- id: C05
+  rule: jassid
+  source: "AESA-2014: more than 2 per leaf"
+  observations: [{observation: jassid_per_leaf, count: 51, units: 25}]
+  expect: crossed
+- id: C06
+  rule: jassid
+  source: "AESA-2014 sampling: 25 leaves"
+  observations: [{observation: jassid_per_leaf, count: 60, units: 24}]
+  expect: insufficient
+- id: C07
+  rule: thrips
+  source: "AESA-2014: more than 10 thrips per leaf"
+  observations: [{observation: thrips_per_leaf, count: 250, units: 25}]
+  expect: not_crossed
+- id: C08
+  rule: thrips
+  source: "AESA-2014: more than 10 thrips per leaf"
+  observations: [{observation: thrips_per_leaf, count: 275, units: 25}]
+  expect: crossed
+- id: C09
+  rule: whitefly
+  source: "AESA-2014: > 10 adults in 2 of 4 plants (50 %)"
+  observations: [{observation: whitefly_plants_over_10, count: 10, units: 20}]
+  expect: crossed
+- id: C10
+  rule: whitefly
+  source: "AESA-2014: > 10 adults in 2 of 4 plants (50 %)"
+  observations: [{observation: whitefly_plants_over_10, count: 9, units: 20}]
+  expect: not_crossed
+- id: C11
+  rule: bollworm_larvae
+  source: "AESA-2014: 1 larva per plant (20 plants)"
+  observations: [{observation: bollworm_larvae_per_plant, count: 20, units: 20}]
+  expect: crossed
+- id: C12
+  rule: bollworm_larvae
+  source: "AESA-2014: 1 larva per plant (20 plants)"
+  observations: [{observation: bollworm_larvae_per_plant, count: 19, units: 20}]
+  expect: not_crossed
+- id: C13
+  rule: bollworm_squares
+  source: "AESA-2014: more than 3 damaged squares per plant"
+  observations: [{observation: bollworm_damaged_squares_per_plant, count: 60, units: 20}]
+  expect: not_crossed
+- id: C14
+  rule: bollworm_squares
+  source: "AESA-2014: more than 3 damaged squares per plant"
+  observations: [{observation: bollworm_damaged_squares_per_plant, count: 61, units: 20}]
+  expect: crossed
+- id: C15
+  rule: mealybug
+  source: "CICR-2011: >= 10 % of > 40 sampled plants at grade 2"
+  observations: [{observation: mealybug_grade2_plants, count: 4, units: 41}]
+  expect: not_crossed          # 9.8 %
+- id: C16
+  rule: mealybug
+  source: "CICR-2011: >= 10 % of > 40 sampled plants at grade 2; spot treatment only"
+  observations: [{observation: mealybug_grade2_plants, count: 5, units: 41}]
+  expect: crossed
+  advisory: {type: SPOT_TREAT}
+- id: C17
+  rule: mealybug
+  source: "CICR-2011: more than 40 plants sampled"
+  observations: [{observation: mealybug_grade2_plants, count: 5, units: 40}]
+  expect: insufficient
+- id: C18
+  rule: mealybug
+  source: "Spec Section 9: confirmed detections say WHERE"
+  observations: [{observation: mealybug_grade2_plants, count: 5, units: 41}]
+  confirmations: [{row: 4, segment: 1, class: mealybug_colony}]
+  expect: crossed
+  advisory: {type: SPOT_TREAT, segments: [R004-S01]}
+- id: C19
+  rule: mealybug
+  source: "Spec Section 9: confirmed detections never decide WHETHER"
+  confirmations: [{row: 4, segment: 1, class: mealybug_colony}, {row: 5, segment: 2, class: mealybug_colony}]
+  expect: insufficient
+  no_advisory: true
+- id: C20
+  rule: leaf_curl_virus
+  source: "No chemical cure: alert and rogue plants"
+  observations: [{observation: leaf_curl_plants, count: 1, units: 20}]
+  expect: crossed
+  advisory: {type: PEST_ALERT}
+- id: C21
+  rule: leaf_curl_virus
+  source: "No chemical cure: alert only when reported"
+  observations: [{observation: leaf_curl_plants, count: 0, units: 20}]
+  expect: not_crossed
+- id: C22
+  rule: pink_bollworm_trap
+  source: "CICR-2019: 8 moths/trap/night for 3 consecutive nights"
+  traps: [{trap: PBW-1, days_ago: 2, moths: 8}, {trap: PBW-1, days_ago: 1, moths: 8}, {trap: PBW-1, days_ago: 0, moths: 8}]
+  expect: crossed
+- id: C23
+  rule: pink_bollworm_trap
+  source: "CICR-2019: 3 consecutive nights"
+  traps: [{trap: PBW-1, days_ago: 2, moths: 8}, {trap: PBW-1, days_ago: 1, moths: 8}, {trap: PBW-1, days_ago: 0, moths: 7}]
+  expect: not_crossed
+- id: C24
+  rule: pink_bollworm_trap
+  source: "CICR-2019: CONSECUTIVE nights (a gap breaks the run)"
+  traps: [{trap: PBW-1, days_ago: 3, moths: 9}, {trap: PBW-1, days_ago: 1, moths: 9}, {trap: PBW-1, days_ago: 0, moths: 9}]
+  expect: not_crossed
+- id: C25
+  rule: pink_bollworm_trap
+  source: "Needs 3 nights of trap data to decide"
+  traps: [{trap: PBW-1, days_ago: 1, moths: 12}, {trap: PBW-1, days_ago: 0, moths: 12}]
+  expect: insufficient
+- id: C26
+  rule: pink_bollworm_trap
+  source: "CICR-2019: moths PER TRAP (mean over traps)"
+  traps: [{trap: PBW-1, days_ago: 2, moths: 10}, {trap: PBW-2, days_ago: 2, moths: 6},
+          {trap: PBW-1, days_ago: 1, moths: 10}, {trap: PBW-2, days_ago: 1, moths: 6},
+          {trap: PBW-1, days_ago: 0, moths: 10}, {trap: PBW-2, days_ago: 0, moths: 6}]
+  expect: crossed
+- id: C27
+  rule: pink_bollworm_flowers
+  source: "CICR-2019: 10 % rosette flowers"
+  scans: [{row: 1, segment: 1, counts: {rosette_flower: 5, flower: 45}}]
+  expect: crossed
+- id: C28
+  rule: pink_bollworm_flowers
+  source: "CICR-2019: 10 % rosette flowers"
+  scans: [{row: 1, segment: 1, counts: {rosette_flower: 4, flower: 46}}]
+  expect: not_crossed
+- id: C29
+  rule: pink_bollworm_flowers
+  source: "At least 50 flowers seen before deciding"
+  scans: [{row: 1, segment: 1, counts: {rosette_flower: 5, flower: 40}}]
+  expect: insufficient
+- id: C30
+  rule: pink_bollworm_green_bolls
+  source: "CICR-2019: 10 % damaged GREEN bolls"
+  scans: [{row: 1, segment: 1, counts: {boll_bored: 5, boll_closed: 45}}]
+  expect: crossed
+- id: C31
+  rule: pink_bollworm_green_bolls
+  source: "CICR-2019: open bolls are not green bolls (not in the denominator)"
+  scans: [{row: 1, segment: 1, counts: {boll_bored: 4, boll_closed: 46, boll_open: 100}}]
+  expect: not_crossed
+- id: C32
+  rule: pink_bollworm_flowers
+  source: "A re-scan replaces the segment's sample, it does not add to it"
+  scans: [{row: 1, segment: 1, counts: {rosette_flower: 9, flower: 41}, hours_ago: 30},
+          {row: 1, segment: 1, counts: {rosette_flower: 4, flower: 46}, hours_ago: 1}]
+  expect: not_crossed
+- id: C33
+  rule: aphid
+  source: "Spec Section 9: no spray advice while a segment has R >= 0.30 (pre-harvest interval)"
+  observations: [{observation: aphid_infested_plants, count: 3, units: 20}]
+  scans: [{row: 2, segment: 1, counts: {boll_open: 3, boll_closed: 7}}]
+  expect: crossed
+  advisory: {type: SPRAY_BLOCKED}
+- id: C34
+  rule: aphid
+  source: "Spec Section 9: R just below 0.30 does not block spray advice"
+  observations: [{observation: aphid_infested_plants, count: 3, units: 20}]
+  scans: [{row: 2, segment: 1, counts: {boll_open: 29, boll_closed: 71}}]
+  expect: crossed
+  advisory: {type: PEST_ETL}
+- id: C35
+  rule: leaf_curl_virus
+  source: "A disease alert is not a spray advice: never blocked"
+  observations: [{observation: leaf_curl_plants, count: 2, units: 20}]
+  scans: [{row: 2, segment: 1, counts: {boll_open: 20, boll_closed: 10}}]
+  expect: crossed
+  advisory: {type: PEST_ALERT}
+- id: C36
+  rule: aphid
+  source: "Spec Section 9: only the last 7 days of evidence count"
+  observations: [{observation: aphid_infested_plants, count: 10, units: 20, days_ago: 8}]
+  expect: insufficient

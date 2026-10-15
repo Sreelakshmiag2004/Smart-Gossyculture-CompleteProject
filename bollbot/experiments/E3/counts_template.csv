@@ -1,3 +1,2 @@
-segment,cls,true,pred
-F04-R012-S04,boll_open,27,25
-F04-R012-S04,boll_closed,41,44
+# example: F04-R012-S04,boll_open,27,25,cart
+segment,cls,true,pred,mode

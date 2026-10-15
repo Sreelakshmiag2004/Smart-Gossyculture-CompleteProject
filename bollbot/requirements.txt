@@ -1,4 +1,8 @@
 pyyaml>=6.0
 pillow>=9.0
+# experiment analyses (Module 8): python -m bollbot.analysis.report
+matplotlib>=3.7
+opencv-python-headless>=4.8   # E7 dye-card scoring (already needed by the cart)
+# notebooks only: pandas, jupyter
 # training / evaluation / export only (Colab or GPU machine):
 # ultralytics>=8.1

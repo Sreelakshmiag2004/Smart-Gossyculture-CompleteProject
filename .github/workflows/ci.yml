@@ -20,7 +20,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install
-        run: pip install pyyaml numpy opencv-python-headless paho-mqtt pillow
+        run: pip install pyyaml numpy opencv-python-headless paho-mqtt pillow matplotlib
       - name: Python tests
         run: python -m unittest discover -s bollbot/tests -t . -v
       - name: Firmware tests (g++)
