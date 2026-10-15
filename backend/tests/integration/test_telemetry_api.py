@@ -189,7 +189,10 @@ async def test_detection_ingested_from_device_is_retrievable(api, setup):
     assert det["id"] == setup["pest"].msg_id and det["deviceId"] == TEST_DEVICE
     assert det["label"] == sent["label"] and det["confidence"] == sent["confidence"] and det["bbox"] == sent["bbox"]
     assert det["source"] == "upstream_device_detector"
-    assert det["detectedAt"].startswith(setup["clock"].base.strftime("%Y-%m-%dT%H:%M"))
+    # Exactly the device timestamp that was sent (a minute-prefix check against the test clock's
+    # start failed whenever the run crossed a minute boundary).
+    sent_ts = datetime.fromisoformat(json.loads(setup["pest"].payload)["ts"])
+    assert datetime.fromisoformat(det["detectedAt"].replace("Z", "+00:00")) == sent_ts
     # Unscoped query returns detections of all the caller's devices.
     unscoped = (await api.get("/api/v1/detections", params=setup["window"], headers=bearer(setup["a"]))).json()["items"]
     assert [d["id"] for d in unscoped] == [setup["pest"].msg_id]
