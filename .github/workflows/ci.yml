@@ -29,6 +29,8 @@ jobs:
   backend-unit:
     name: Backend unit tests
     runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: src          # as in the backend Docker image (PYTHONPATH=/app/src); tests start subprocesses
     defaults:
       run:
         working-directory: backend
@@ -41,7 +43,7 @@ jobs:
         run: pip install -r requirements-dev.txt -c constraints.txt
       - name: OpenAPI file up to date
         run: |
-          PYTHONPATH=src python -m gossy.api.export_openapi > /tmp/openapi.json
+          python -m gossy.api.export_openapi > /tmp/openapi.json
           if ! diff -q docs/openapi.json /tmp/openapi.json; then
             echo "::error::docs/openapi.json is out of date. Run: cd backend && PYTHONPATH=src python -m gossy.api.export_openapi > docs/openapi.json"
             diff -u docs/openapi.json /tmp/openapi.json | head -80

@@ -45,6 +45,7 @@ class SimulatedDevice:
         # Synthetic state; values are illustrative, not agronomic.
         self._battery = 100.0
         self._bolls_total = 0
+        self._pick_n = 0
 
     def _message(self, kind: MessageKind, data: dict, *, retain: bool = False) -> OutgoingMessage:
         msg_id = new_ulid()
@@ -104,6 +105,50 @@ class SimulatedDevice:
             MessageKind.HARVEST,
             {"maturity": maturity, "picked": picked, "moistureRhPct": round(self._rng.uniform(30, 70), 1)},
         )
+
+    def scan(self, row: int = 1, segment: int = 1) -> OutgoingMessage:
+        # Phase II: the cart closes one row segment and reports per-class counts.
+        # Illustrative numbers only; a READY-looking segment about one time in three.
+        closed = self._rng.randint(10, 50)
+        opened = self._rng.randint(0, closed)
+        started = self._clock().timestamp() - self._rng.uniform(60, 180)
+        counts = {
+            "bollClosed": closed,
+            "bollCracking": self._rng.randint(0, 10),
+            "bollOpen": opened,
+            "bollBored": self._rng.randint(0, 2),
+            "rosetteFlower": self._rng.randint(0, 2),
+        }
+        return self._message(
+            MessageKind.SCAN,
+            {
+                "row": row,
+                "segment": segment,
+                "counts": {k: v for k, v in counts.items() if v},
+                "startedAt": datetime.fromtimestamp(started, UTC).isoformat(timespec="milliseconds"),
+                "frames": self._rng.randint(200, 900),
+                "model": "sim-yolov8n",
+                "airTempC": round(self._rng.uniform(24, 38), 1),
+                "airRhPct": round(self._rng.uniform(40, 90), 1),
+            },
+        )
+
+    def pick(self, row: int = 1, segment: int = 1) -> OutgoingMessage:
+        # Phase II experiment E10: one robotic pick attempt (most succeed, some are aborted).
+        self._pick_n += 1
+        result = self._rng.choices(("completed", "unreachable", "aborted"), weights=(7, 2, 1))[0]
+        data: dict = {
+            "attemptId": f"sim-{self._pick_n:06d}",
+            "result": result,
+            "row": row,
+            "segment": segment,
+            "trackId": self._rng.randint(0, 500),
+            "confidence": round(self._rng.uniform(0.5, 0.99), 2),
+            "cycleS": round(self._rng.uniform(8, 25), 1),
+        }
+        if result != "completed":
+            data["reason"] = "simulated: out of reach" if result == "unreachable" else "simulated: link lost"
+        return self._message(MessageKind.PICK, data)
 
     def last_will(self) -> OutgoingMessage:
         """Offline status registered with the broker at connect time (published by the broker)."""

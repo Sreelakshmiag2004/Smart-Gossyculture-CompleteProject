@@ -23,8 +23,9 @@ def test_every_generated_message_is_contract_valid(device):
     messages = [device.status("online"), device.telemetry(), device.harvest(), device.last_will()]
     pest = device.pest()
     messages += [pest, device.spray(related_msg_id=pest.msg_id)]
-    for _ in range(50):
-        messages += [device.telemetry(), device.pest(), device.harvest()]
+    for i in range(50):
+        messages += [device.telemetry(), device.pest(), device.harvest(),
+                     device.scan(row=i + 1, segment=2), device.pick(row=i + 1, segment=2)]
     for m in messages:
         parsed = parse_message(m.topic, m.payload, **LIMITS)
         assert parsed.envelope.msg_id == m.msg_id
@@ -62,7 +63,8 @@ def test_harvest_picked_follows_maturity_only(device):
 
 
 def test_simulator_emits_no_command_topics(device):
-    kinds = {device.telemetry().kind, device.pest().kind, device.spray().kind, device.harvest().kind, device.status("online").kind}
+    kinds = {device.telemetry().kind, device.pest().kind, device.spray().kind, device.harvest().kind,
+             device.scan().kind, device.pick().kind, device.status("online").kind}
     assert kinds == set(MessageKind)
 
 
