@@ -213,5 +213,18 @@ class UploaderTests(unittest.TestCase):
             MqttCloudUploader("Cart 01", "h", 1, "ca", "pw", lambda: 0, client=FakeClient())
 
 
+class DemoToolTests(unittest.TestCase):
+    def test_demo_pass_maps_to_valid_contract_messages(self):
+        from bollbot.core.rules import readiness
+        from bollbot.tools.demo_scans import records
+        recs = records(T)
+        self.assertEqual([k for k, _, _ in recs], ["heartbeat", "scan", "scan", "scan"])
+        r = [readiness(p["counts"]) for k, _, p in recs if k == "scan"]
+        self.assertTrue(r[0] >= 0.40 and 0.20 <= r[1] < 0.40 and r[2] < 0.20)   # READY, BUILDING, NOT READY
+        for kind, _, payload in recs:
+            topic, env = contract.envelope(kind, payload, "cart01", contract.new_ulid(), 1)
+            self.assertTrue(topic.startswith("bollbot/v1/cart01/"))
+
+
 if __name__ == "__main__":
     unittest.main()
