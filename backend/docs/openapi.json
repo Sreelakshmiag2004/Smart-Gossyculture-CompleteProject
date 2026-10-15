@@ -33,6 +33,102 @@
         "title": "AdminDeviceCreate",
         "type": "object"
       },
+      "Advisory": {
+        "additionalProperties": false,
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "pest": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pest"
+          },
+          "reason": {
+            "description": "Why the rule fired (for the operator; not translated)",
+            "title": "Reason",
+            "type": "string"
+          },
+          "resolvedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolvedat"
+          },
+          "segments": {
+            "description": "Row segments, e.g. R003-S02, most urgent first",
+            "items": {
+              "type": "string"
+            },
+            "title": "Segments",
+            "type": "array"
+          },
+          "textEn": {
+            "title": "Texten",
+            "type": "string"
+          },
+          "textTa": {
+            "description": "Tamil text. Must be reviewed by a native speaker before farmer trials (E9).",
+            "title": "Textta",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "PICK_NOW",
+              "PICK_LIST",
+              "PEST_ETL",
+              "SPOT_TREAT",
+              "PEST_ALERT",
+              "SPRAY_BLOCKED"
+            ],
+            "title": "Type",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "title": "Updatedat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "pest",
+          "segments",
+          "reason",
+          "textEn",
+          "textTa",
+          "active",
+          "createdAt",
+          "updatedAt",
+          "resolvedAt"
+        ],
+        "title": "Advisory",
+        "type": "object"
+      },
       "Alert": {
         "additionalProperties": false,
         "properties": {
@@ -150,6 +246,137 @@
           "farmId"
         ],
         "title": "ClaimRequest",
+        "type": "object"
+      },
+      "Confirmation": {
+        "additionalProperties": false,
+        "properties": {
+          "className": {
+            "title": "Classname",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "observedOn": {
+            "format": "date",
+            "title": "Observedon",
+            "type": "string"
+          },
+          "recordedAt": {
+            "format": "date-time",
+            "title": "Recordedat",
+            "type": "string"
+          },
+          "recordedBy": {
+            "format": "uuid",
+            "title": "Recordedby",
+            "type": "string"
+          },
+          "row": {
+            "title": "Row",
+            "type": "integer"
+          },
+          "segment": {
+            "title": "Segment",
+            "type": "integer"
+          },
+          "sourceMsgId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sourcemsgid"
+          },
+          "verdict": {
+            "title": "Verdict",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "observedOn",
+          "row",
+          "segment",
+          "className",
+          "verdict",
+          "sourceMsgId",
+          "recordedAt",
+          "recordedBy"
+        ],
+        "title": "Confirmation",
+        "type": "object"
+      },
+      "ConfirmationIn": {
+        "additionalProperties": false,
+        "properties": {
+          "className": {
+            "enum": [
+              "boll_closed",
+              "boll_cracking",
+              "boll_open",
+              "boll_defective",
+              "flower",
+              "rosette_flower",
+              "boll_bored",
+              "mealybug_colony"
+            ],
+            "title": "Classname",
+            "type": "string"
+          },
+          "observedOn": {
+            "format": "date",
+            "title": "Observedon",
+            "type": "string"
+          },
+          "row": {
+            "maximum": 10000.0,
+            "minimum": 1.0,
+            "title": "Row",
+            "type": "integer"
+          },
+          "segment": {
+            "maximum": 10000.0,
+            "minimum": 1.0,
+            "title": "Segment",
+            "type": "integer"
+          },
+          "sourceMsgId": {
+            "anyOf": [
+              {
+                "description": "msgId of the scan or detection that was checked",
+                "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sourcemsgid"
+          },
+          "verdict": {
+            "enum": [
+              "confirmed",
+              "rejected"
+            ],
+            "title": "Verdict",
+            "type": "string"
+          }
+        },
+        "required": [
+          "observedOn",
+          "row",
+          "segment",
+          "className",
+          "verdict"
+        ],
+        "title": "ConfirmationIn",
         "type": "object"
       },
       "Detection": {
@@ -457,6 +684,16 @@
       "Farm": {
         "additionalProperties": false,
         "properties": {
+          "access": {
+            "default": "owner",
+            "description": "owner: the caller owns the farm; operator: the owner added the caller to enter data",
+            "enum": [
+              "owner",
+              "operator"
+            ],
+            "title": "Access",
+            "type": "string"
+          },
           "createdAt": {
             "format": "date-time",
             "title": "Createdat",
@@ -466,6 +703,29 @@
             "format": "uuid",
             "title": "Id",
             "type": "string"
+          },
+          "latitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Farm location for the rain forecast (null until the owner sets it)",
+            "title": "Latitude"
+          },
+          "longitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Longitude"
           },
           "name": {
             "title": "Name",
@@ -496,6 +756,198 @@
         "title": "FarmCreate",
         "type": "object"
       },
+      "FarmMember": {
+        "additionalProperties": false,
+        "properties": {
+          "addedAt": {
+            "format": "date-time",
+            "title": "Addedat",
+            "type": "string"
+          },
+          "displayName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Displayname"
+          },
+          "phone": {
+            "title": "Phone",
+            "type": "string"
+          },
+          "role": {
+            "const": "operator",
+            "description": "Operators enter trap, scouting and confirmation data and read the farm's advice",
+            "title": "Role",
+            "type": "string"
+          },
+          "userId": {
+            "format": "uuid",
+            "title": "Userid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "userId",
+          "phone",
+          "displayName",
+          "role",
+          "addedAt"
+        ],
+        "title": "FarmMember",
+        "type": "object"
+      },
+      "FarmStatus": {
+        "additionalProperties": false,
+        "properties": {
+          "computedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null until the rules have run for this farm",
+            "title": "Computedat"
+          },
+          "farmId": {
+            "format": "uuid",
+            "title": "Farmid",
+            "type": "string"
+          },
+          "forecastFetchedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Forecastfetchedat"
+          },
+          "pests": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/PestStatus"
+            },
+            "title": "Pests",
+            "type": "array"
+          },
+          "rainLast24HMm": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rainlast24Hmm"
+          },
+          "rainMaxProb48HPct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rainmaxprob48Hpct"
+          },
+          "segments": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SegmentStatus"
+            },
+            "title": "Segments",
+            "type": "array"
+          },
+          "weatherNow": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WeatherNow"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "window": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PickingWindow"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null without a weather reading (no recent cart reading and no forecast)"
+          }
+        },
+        "required": [
+          "farmId",
+          "computedAt"
+        ],
+        "title": "FarmStatus",
+        "type": "object"
+      },
+      "FarmUpdate": {
+        "additionalProperties": false,
+        "description": "Only the fields sent are changed. Location: send both, or both null to clear it.",
+        "properties": {
+          "latitude": {
+            "anyOf": [
+              {
+                "maximum": 90.0,
+                "minimum": -90.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latitude"
+          },
+          "longitude": {
+            "anyOf": [
+              {
+                "maximum": 180.0,
+                "minimum": -180.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Longitude"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "title": "FarmUpdate",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -507,6 +959,168 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "MemberAdd": {
+        "additionalProperties": false,
+        "properties": {
+          "phone": {
+            "description": "E.164 phone number, e.g. +99900000001",
+            "examples": [
+              "+99900000001"
+            ],
+            "pattern": "^\\+[1-9][0-9]{7,14}$",
+            "title": "Phone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "phone"
+        ],
+        "title": "MemberAdd",
+        "type": "object"
+      },
+      "Observation": {
+        "additionalProperties": false,
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "observation": {
+            "title": "Observation",
+            "type": "string"
+          },
+          "observedOn": {
+            "format": "date",
+            "title": "Observedon",
+            "type": "string"
+          },
+          "pest": {
+            "title": "Pest",
+            "type": "string"
+          },
+          "recordedAt": {
+            "format": "date-time",
+            "title": "Recordedat",
+            "type": "string"
+          },
+          "recordedBy": {
+            "format": "uuid",
+            "title": "Recordedby",
+            "type": "string"
+          },
+          "row": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Row"
+          },
+          "segment": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Segment"
+          },
+          "units": {
+            "title": "Units",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "observedOn",
+          "observation",
+          "pest",
+          "count",
+          "units",
+          "row",
+          "segment",
+          "recordedAt",
+          "recordedBy"
+        ],
+        "title": "Observation",
+        "type": "object"
+      },
+      "ObservationIn": {
+        "additionalProperties": false,
+        "properties": {
+          "count": {
+            "description": "Insects, infested plants, ... counted",
+            "maximum": 100000.0,
+            "minimum": 0.0,
+            "title": "Count",
+            "type": "integer"
+          },
+          "observation": {
+            "description": "Key from GET /api/v1/farm-rules/catalog, e.g. aphid_infested_plants",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Observation",
+            "type": "string"
+          },
+          "observedOn": {
+            "description": "Day of the field sample (Indian date)",
+            "format": "date",
+            "title": "Observedon",
+            "type": "string"
+          },
+          "row": {
+            "anyOf": [
+              {
+                "maximum": 10000.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Row"
+          },
+          "segment": {
+            "anyOf": [
+              {
+                "maximum": 10000.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Segment"
+          },
+          "units": {
+            "description": "Leaves or plants examined",
+            "maximum": 10000.0,
+            "minimum": 1.0,
+            "title": "Units",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "observedOn",
+          "observation",
+          "count",
+          "units"
+        ],
+        "title": "ObservationIn",
         "type": "object"
       },
       "OtpRequest": {
@@ -570,6 +1184,34 @@
           "code"
         ],
         "title": "OtpVerify",
+        "type": "object"
+      },
+      "Page_Advisory_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Advisory"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Pass as `cursor` to fetch the next (older) page; null when there are no more items.",
+            "title": "Nextcursor"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "Page[Advisory]",
         "type": "object"
       },
       "Page_Alert_": {
@@ -684,6 +1326,223 @@
         "title": "Page[TelemetryPoint]",
         "type": "object"
       },
+      "PestRule": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": [
+              "ADVISORY",
+              "SPOT_TREAT",
+              "ALERT_ONLY"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "comparison": {
+            "enum": [
+              ">",
+              ">="
+            ],
+            "title": "Comparison",
+            "type": "string"
+          },
+          "evidence": {
+            "description": "trap | camera | manual | camera_confirmed",
+            "title": "Evidence",
+            "type": "string"
+          },
+          "minUnits": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Minunits"
+          },
+          "nameEn": {
+            "title": "Nameen",
+            "type": "string"
+          },
+          "nameTa": {
+            "title": "Nameta",
+            "type": "string"
+          },
+          "nights": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nights"
+          },
+          "observation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Scouting key to send in POST .../observations (manual rules)",
+            "title": "Observation"
+          },
+          "pest": {
+            "title": "Pest",
+            "type": "string"
+          },
+          "ruleType": {
+            "enum": [
+              "consecutive_nights",
+              "camera_ratio",
+              "mean_per_unit",
+              "percent_units",
+              "presence"
+            ],
+            "title": "Ruletype",
+            "type": "string"
+          },
+          "threshold": {
+            "title": "Threshold",
+            "type": "number"
+          },
+          "trapPrefix": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trapprefix"
+          }
+        },
+        "required": [
+          "pest",
+          "nameEn",
+          "nameTa",
+          "ruleType",
+          "evidence",
+          "observation",
+          "trapPrefix",
+          "threshold",
+          "comparison",
+          "minUnits",
+          "nights",
+          "action"
+        ],
+        "title": "PestRule",
+        "type": "object"
+      },
+      "PestStatus": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": [
+              "ADVISORY",
+              "SPOT_TREAT",
+              "ALERT_ONLY"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "crossed": {
+            "title": "Crossed",
+            "type": "boolean"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "insufficient": {
+            "description": "Too little evidence to decide: scout more",
+            "title": "Insufficient",
+            "type": "boolean"
+          },
+          "pest": {
+            "title": "Pest",
+            "type": "string"
+          },
+          "segments": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Segments",
+            "type": "array"
+          },
+          "threshold": {
+            "title": "Threshold",
+            "type": "number"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "pest",
+          "crossed",
+          "insufficient",
+          "value",
+          "threshold",
+          "action",
+          "detail",
+          "segments"
+        ],
+        "title": "PestStatus",
+        "type": "object"
+      },
+      "PickingWindow": {
+        "additionalProperties": false,
+        "properties": {
+          "dewpointC": {
+            "title": "Dewpointc",
+            "type": "number"
+          },
+          "dewpointDepressionC": {
+            "title": "Dewpointdepressionc",
+            "type": "number"
+          },
+          "reasons": {
+            "description": "Why it is not safe yet (empty when SAFE)",
+            "items": {
+              "type": "string"
+            },
+            "title": "Reasons",
+            "type": "array"
+          },
+          "status": {
+            "enum": [
+              "SAFE",
+              "WAIT"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "dewpointC",
+          "dewpointDepressionC",
+          "reasons"
+        ],
+        "title": "PickingWindow",
+        "type": "object"
+      },
       "ProvisionedDevice": {
         "additionalProperties": false,
         "properties": {
@@ -723,6 +1582,68 @@
           "refreshToken"
         ],
         "title": "RefreshRequest",
+        "type": "object"
+      },
+      "SegmentStatus": {
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "examples": [
+              "R003-S02"
+            ],
+            "title": "Key",
+            "type": "string"
+          },
+          "openBolls": {
+            "title": "Openbolls",
+            "type": "integer"
+          },
+          "readiness": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "R = open / (closed + cracking + open) from the latest scan; null if no bolls were seen",
+            "title": "Readiness"
+          },
+          "row": {
+            "title": "Row",
+            "type": "integer"
+          },
+          "scannedAt": {
+            "format": "date-time",
+            "title": "Scannedat",
+            "type": "string"
+          },
+          "segment": {
+            "title": "Segment",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "READY",
+              "BUILDING",
+              "NOT_READY",
+              "NO_DATA"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "row",
+          "segment",
+          "readiness",
+          "status",
+          "openBolls",
+          "scannedAt"
+        ],
+        "title": "SegmentStatus",
         "type": "object"
       },
       "TelemetryPoint": {
@@ -879,6 +1800,82 @@
         "title": "TokenPair",
         "type": "object"
       },
+      "TrapCount": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "moths": {
+            "title": "Moths",
+            "type": "integer"
+          },
+          "night": {
+            "format": "date",
+            "title": "Night",
+            "type": "string"
+          },
+          "recordedAt": {
+            "format": "date-time",
+            "title": "Recordedat",
+            "type": "string"
+          },
+          "recordedBy": {
+            "format": "uuid",
+            "title": "Recordedby",
+            "type": "string"
+          },
+          "trap": {
+            "title": "Trap",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "trap",
+          "night",
+          "moths",
+          "recordedAt",
+          "recordedBy"
+        ],
+        "title": "TrapCount",
+        "type": "object"
+      },
+      "TrapCountIn": {
+        "additionalProperties": false,
+        "properties": {
+          "moths": {
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Moths",
+            "type": "integer"
+          },
+          "night": {
+            "description": "Night the count covers (Indian date)",
+            "format": "date",
+            "title": "Night",
+            "type": "string"
+          },
+          "trap": {
+            "description": "Trap id; the prefix names the pest, e.g. PBW-1",
+            "examples": [
+              "PBW-1"
+            ],
+            "pattern": "^[A-Za-z]{2,8}-[0-9A-Za-z]{1,8}$",
+            "title": "Trap",
+            "type": "string"
+          }
+        },
+        "required": [
+          "trap",
+          "night",
+          "moths"
+        ],
+        "title": "TrapCountIn",
+        "type": "object"
+      },
       "UpdateProfile": {
         "additionalProperties": false,
         "properties": {
@@ -994,6 +1991,47 @@
         ],
         "title": "ValidationError",
         "type": "object"
+      },
+      "WeatherNow": {
+        "additionalProperties": false,
+        "properties": {
+          "airRhPct": {
+            "title": "Airrhpct",
+            "type": "number"
+          },
+          "airTempC": {
+            "title": "Airtempc",
+            "type": "number"
+          },
+          "dewpointC": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dewpointc"
+          },
+          "source": {
+            "description": "The cart's own sensor when it read in the last 2 h, else the forecast model",
+            "enum": [
+              "cart",
+              "forecast"
+            ],
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "airTempC",
+          "airRhPct",
+          "dewpointC",
+          "source"
+        ],
+        "title": "WeatherNow",
+        "type": "object"
       }
     },
     "securitySchemes": {
@@ -1005,7 +2043,7 @@
     }
   },
   "info": {
-    "description": "\nBackend API for Smart Gossyculture / BOLLBOT (v1, **monitoring-only**).\n\n**Authentication.** Phone one-time code \u2192 `POST /api/v1/auth/otp/request`, then\n`POST /api/v1/auth/otp/verify` returns a short-lived access token (JWT, `Authorization: Bearer \u2026`)\nand a single-use refresh token (`POST /api/v1/auth/refresh` rotates it; reuse revokes the session).\nDevelopment/staging use allow-listed test numbers with a fixed code; no SMS is sent. Real SMS\ndelivery is not implemented (provider undecided).\n\n**Authorization.** Farmers see only devices attached to farms they own; other resources answer 404.\nAdmin endpoints (`/api/v1/admin/...`) handle device provisioning only.\n\n**Errors.** Every error body is `{\"error\": {\"code\", \"message\", \"requestId\", \"details?\"}}`.\n\n**Live updates.** `GET /api/v1/ws` (WebSocket, protocol `gossy.ws.v1`) streams events and alerts to\nauthorized clients; see `docs/websocket-contract.md`. It accepts only `start`, `resume` and `ping`.\n\n**No device control.** There is no endpoint, WebSocket operation or MQTT topic that sends commands\nto devices. Harvesting and spraying are never triggered by this API.\n",
+    "description": "\nBackend API for Smart Gossyculture / BOLLBOT (v1, **monitoring-only**).\n\n**Authentication.** Phone one-time code \u2192 `POST /api/v1/auth/otp/request`, then\n`POST /api/v1/auth/otp/verify` returns a short-lived access token (JWT, `Authorization: Bearer \u2026`)\nand a single-use refresh token (`POST /api/v1/auth/refresh` rotates it; reuse revokes the session).\nDevelopment/staging use allow-listed test numbers with a fixed code; no SMS is sent. Real SMS\ndelivery is not implemented (provider undecided).\n\n**Authorization.** Farmers see only devices attached to farms they own; other resources answer 404.\nA farm's owner can add operators, who read the farm's advice and enter trap, scouting and\nconfirmation data, but cannot see its devices. Admin endpoints (`/api/v1/admin/...`) handle\ndevice provisioning only.\n\n**Farm rules.** Advice (harvest readiness per row segment, picking window, rain alert, pest\nthresholds with spray blocking) is computed from cart scans and entered data by the published\nrules in `bollbot/config`; see `docs/farm-rules.md`. Advice never triggers a device.\n\n**Errors.** Every error body is `{\"error\": {\"code\", \"message\", \"requestId\", \"details?\"}}`.\n\n**Live updates.** `GET /api/v1/ws` (WebSocket, protocol `gossy.ws.v1`) streams events and alerts to\nauthorized clients; see `docs/websocket-contract.md`. It accepts only `start`, `resume` and `ping`.\n\n**No device control.** There is no endpoint, WebSocket operation or MQTT topic that sends commands\nto devices. Harvesting and spraying are never triggered by this API.\n",
     "title": "Smart Gossyculture API",
     "version": "0.1.0"
   },
@@ -2530,6 +3568,46 @@
         ]
       }
     },
+    "/api/v1/farm-rules/catalog": {
+      "get": {
+        "operationId": "catalog_api_v1_farm_rules_catalog_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PestRule"
+                  },
+                  "title": "Response Catalog Api V1 Farm Rules Catalog Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid or expired access token (WWW-Authenticate: Bearer)."
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Pest threshold rules (ETLs) with their scouting keys",
+        "tags": [
+          "farm-rules"
+        ]
+      }
+    },
     "/api/v1/farms": {
       "get": {
         "operationId": "list_farms_api_v1_farms_get",
@@ -2564,7 +3642,7 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Farms owned by the caller",
+        "summary": "Farms the caller owns, then farms the caller operates",
         "tags": [
           "farms"
         ]
@@ -2686,9 +3764,1364 @@
             "BearerAuth": []
           }
         ],
-        "summary": "One farm owned by the caller",
+        "summary": "One farm the caller owns or operates",
         "tags": [
           "farms"
+        ]
+      },
+      "patch": {
+        "operationId": "update_farm_api_v1_farms__farm_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "farm_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Farm Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FarmUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Farm"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid or expired access token (WWW-Authenticate: Bearer)."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not permitted (e.g. admin-only endpoint)."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not found, or not accessible to the caller (existence is not revealed)."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed."
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Rename a farm or set its location (owner only)",
+        "tags": [
+          "farms"
+        ]
+      }
+    },
+    "/api/v1/farms/{farm_id}/advisories": {
+      "get": {
+        "operationId": "list_advisories_api_v1_farms__farm_id__advisories_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "farm_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Farm Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "true: current advice only; false: resolved only",
+            "in": "query",
+            "name": "active",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "true: current advice only; false: resolved only",
+              "title": "Active"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 1000,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 512,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_Advisory_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid or expired access token (WWW-Authenticate: Bearer)."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not found, or not accessible to the caller (existence is not revealed)."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed."
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Advice for a farm, newest first",
+        "tags": [
+          "farm-rules"
+        ]
+      }
+    },
+    "/api/v1/farms/{farm_id}/confirmations": {
+      "get": {
+        "operationId": "list_confirmations_api_v1_farms__farm_id__confirmations_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "farm_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Farm Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "How many days back, counted from today (Indian date)",
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "description": "How many days back, counted from today (Indian date)",
+              "maximum": 60,
+              "minimum": 1,
+              "title": "Days",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Confirmation"
+                  },
+                  "title": "Response List Confirmations Api V1 Farms  Farm Id  Confirmations Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid or expired access token (WWW-Authenticate: Bearer)."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not found, or not accessible to the caller (existence is not revealed)."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed."
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Checked detections, newest day first",
+        "tags": [
+          "farm-rules"
+        ]
+      },
+      "post": {
+        "operationId": "add_confirmation_api_v1_farms__farm_id__confirmations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "farm_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Farm Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmationIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Confirmation"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid or expired access token (WWW-Authenticate: Bearer)."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not permitted (e.g. admin-only endpoint)."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not found, or not accessible to the caller (existence is not revealed)."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed."
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Record that a camera detection was checked on the plant (confirmed or rejected)",
+        "tags": [
+          "farm-rules"
+        ]
+      }
+    },
+    "/api/v1/farms/{farm_id}/confirmations/{record_id}": {
+      "delete": {
+        "operationId": "delete_confirmation_api_v1_farms__farm_id__confirmations__record_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "farm_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Farm Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "record_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Record Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid or expired access token (WWW-Authenticate: Bearer)."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not permitted (e.g. admin-only endpoint)."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not found, or not accessible to the caller (existence is not revealed)."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed."
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Remove a confirmation entered by mistake",
+        "tags": [
+          "farm-rules"
+        ]
+      }
+    },
+    "/api/v1/farms/{farm_id}/members": {
+      "get": {
+        "operationId": "list_members_api_v1_farms__farm_id__members_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "farm_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Farm Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FarmMember"
+                  },
+                  "title": "Response List Members Api V1 Farms  Farm Id  Members Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid or expired access token (WWW-Authenticate: Bearer)."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not permitted (e.g. admin-only endpoint)."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not found, or not accessible to the caller (existence is not revealed)."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed."
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Operators of a farm (owner only)",
+        "tags": [
+          "farms"
+        ]
+      },
+      "post": {
+        "operationId": "add_member_api_v1_farms__farm_id__members_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "farm_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Farm Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberAdd"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FarmMember"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid or expired access token (WWW-Authenticate: Bearer)."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not permitted (e.g. admin-only endpoint)."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not found, or not accessible to the caller (existence is not revealed)."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed."
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Add an operator by phone number (owner only)",
+        "tags": [
+          "farms"
+        ]
+      }
+    },
+    "/api/v1/farms/{farm_id}/members/{user_id}": {
+      "delete": {
+        "operationId": "remove_member_api_v1_farms__farm_id__members__user_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "farm_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Farm Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid or expired access token (WWW-Authenticate: Bearer)."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not permitted (e.g. admin-only endpoint)."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not found, or not accessible to the caller (existence is not revealed)."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed."
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Remove an operator (owner only)",
+        "tags": [
+          "farms"
+        ]
+      }
+    },
+    "/api/v1/farms/{farm_id}/observations": {
+      "get": {
+        "operationId": "list_observations_api_v1_farms__farm_id__observations_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "farm_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Farm Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "How many days back, counted from today (Indian date)",
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "description": "How many days back, counted from today (Indian date)",
+              "maximum": 60,
+              "minimum": 1,
+              "title": "Days",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Observation"
+                  },
+                  "title": "Response List Observations Api V1 Farms  Farm Id  Observations Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid or expired access token (WWW-Authenticate: Bearer)."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not found, or not accessible to the caller (existence is not revealed)."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed."
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Scouting counts, newest day first",
+        "tags": [
+          "farm-rules"
+        ]
+      },
+      "post": {
+        "operationId": "add_observation_api_v1_farms__farm_id__observations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "farm_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Farm Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ObservationIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Observation"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid or expired access token (WWW-Authenticate: Bearer)."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not permitted (e.g. admin-only endpoint)."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not found, or not accessible to the caller (existence is not revealed)."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed."
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Record a scouting count (e.g. aphid-infested plants out of 20 examined)",
+        "tags": [
+          "farm-rules"
+        ]
+      }
+    },
+    "/api/v1/farms/{farm_id}/observations/{record_id}": {
+      "delete": {
+        "operationId": "delete_observation_api_v1_farms__farm_id__observations__record_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "farm_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Farm Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "record_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Record Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid or expired access token (WWW-Authenticate: Bearer)."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not permitted (e.g. admin-only endpoint)."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not found, or not accessible to the caller (existence is not revealed)."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed."
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Remove a scouting count entered by mistake",
+        "tags": [
+          "farm-rules"
+        ]
+      }
+    },
+    "/api/v1/farms/{farm_id}/status": {
+      "get": {
+        "operationId": "get_status_api_v1_farms__farm_id__status_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "farm_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Farm Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FarmStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid or expired access token (WWW-Authenticate: Bearer)."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not found, or not accessible to the caller (existence is not revealed)."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed."
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Segment readiness, picking window, weather and pest thresholds for a farm",
+        "tags": [
+          "farm-rules"
+        ]
+      }
+    },
+    "/api/v1/farms/{farm_id}/status/recompute": {
+      "post": {
+        "operationId": "recompute_status_api_v1_farms__farm_id__status_recompute_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "farm_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Farm Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FarmStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid or expired access token (WWW-Authenticate: Bearer)."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not permitted (e.g. admin-only endpoint)."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not found, or not accessible to the caller (existence is not revealed)."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed."
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Re-run the farm's rules now (uses the cached forecast)",
+        "tags": [
+          "farm-rules"
+        ]
+      }
+    },
+    "/api/v1/farms/{farm_id}/traps": {
+      "get": {
+        "operationId": "list_trap_counts_api_v1_farms__farm_id__traps_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "farm_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Farm Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "How many days back, counted from today (Indian date)",
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "description": "How many days back, counted from today (Indian date)",
+              "maximum": 60,
+              "minimum": 1,
+              "title": "Days",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TrapCount"
+                  },
+                  "title": "Response List Trap Counts Api V1 Farms  Farm Id  Traps Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid or expired access token (WWW-Authenticate: Bearer)."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not found, or not accessible to the caller (existence is not revealed)."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed."
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Trap counts, newest night first",
+        "tags": [
+          "farm-rules"
+        ]
+      },
+      "post": {
+        "operationId": "add_trap_count_api_v1_farms__farm_id__traps_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "farm_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Farm Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrapCountIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrapCount"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid or expired access token (WWW-Authenticate: Bearer)."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not permitted (e.g. admin-only endpoint)."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not found, or not accessible to the caller (existence is not revealed)."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed."
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Record a pheromone-trap count (replaces the same trap's count for that night)",
+        "tags": [
+          "farm-rules"
+        ]
+      }
+    },
+    "/api/v1/farms/{farm_id}/traps/{record_id}": {
+      "delete": {
+        "operationId": "delete_trap_count_api_v1_farms__farm_id__traps__record_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "farm_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Farm Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "record_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Record Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid or expired access token (WWW-Authenticate: Bearer)."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not permitted (e.g. admin-only endpoint)."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not found, or not accessible to the caller (existence is not revealed)."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed."
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Remove a trap count entered by mistake",
+        "tags": [
+          "farm-rules"
         ]
       }
     },
@@ -2857,6 +5290,10 @@
     {
       "description": "Alerts derived from device messages",
       "name": "alerts"
+    },
+    {
+      "description": "Advice from the farm rules (harvest readiness, picking window, rain alert, pest thresholds) and the data they use: trap counts, scouting counts, checked detections",
+      "name": "farm-rules"
     },
     {
       "description": "Device provisioning (admin role)",
