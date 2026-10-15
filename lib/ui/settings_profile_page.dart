@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'tutorials_help_page.dart';
 import 'community_support_page.dart';
 import 'dashboard.dart';
-import 'Harvest.dart';
-import 'pest_alerts_page.dart';
-import 'notifications_page.dart';
 
 import '../core/app_services.dart';
 import 'edit_profile_page.dart';

@@ -1,16 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'dashboard.dart';
-import 'pest_alerts_page.dart';
-import 'notifications_page.dart';
-import 'settings_profile_page.dart';
 import 'widgets/bottom_nav_bar.dart';
 import 'dart:io';
 import 'package:excel/excel.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_file_dialog/flutter_file_dialog.dart';
 import 'package:share_plus/share_plus.dart';
-import 'dart:typed_data';
 
 class Harvest extends StatelessWidget {
   const Harvest({super.key});

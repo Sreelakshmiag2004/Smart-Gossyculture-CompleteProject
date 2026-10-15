@@ -1,10 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dashboard.dart';
-import 'Harvest.dart';
-import 'pest_alerts_page.dart';
-import 'notifications_page.dart';
-import 'widgets/bottom_nav_bar.dart';
-import 'settings_profile_page.dart';
 
 
 class TutorialsHelpPage extends StatefulWidget {

@@ -1,11 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart';
-import 'dashboard.dart';
-import 'Harvest.dart';
-import 'pest_alerts_page.dart';
-import 'notifications_page.dart';
 
-import 'settings_profile_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class MarketplacePage extends StatefulWidget {
@@ -401,11 +395,6 @@ class _MarketplacePageState extends State<MarketplacePage> {
 class StockGraphPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.black54
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
-
     final pointPaint = Paint()
       ..color = const Color(0xFF5FA62C)
       ..style = PaintingStyle.fill;

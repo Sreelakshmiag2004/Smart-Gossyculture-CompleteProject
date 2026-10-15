@@ -148,17 +148,33 @@ class LiveEvent extends LiveMessage {
   /// Alerts the backend created from this message, with the same fields as GET /alerts.
   final List<Alert> alerts;
 
+  /// Telemetry fields of the MQTT contract (bollbot.telemetry/1). The backend rejects a
+  /// telemetry message that has none of them, so an event without any is not a real reading.
+  static const telemetryFields = {
+    'batteryPct', 'moistureRhPct', 'airTempC', 'bollsHarvestedTotal', 'solarActive',
+    'airRhPct', 'dewpointC', 'fps', 'outboxPending',
+  };
+
   /// The same row GET /devices/{id}/telemetry returns for this message.
-  TelemetryPoint toTelemetry() => TelemetryPoint(
-        time: ts,
-        msgId: msgId,
-        batteryPct: _optional<num>(data, 'batteryPct')?.toDouble(),
-        moistureRhPct: _optional<num>(data, 'moistureRhPct')?.toDouble(),
-        airTempC: _optional<num>(data, 'airTempC')?.toDouble(),
-        bollsHarvestedTotal: _optional<int>(data, 'bollsHarvestedTotal'),
-        solarActive: _optional<bool>(data, 'solarActive'),
-        receivedAt: receivedAt,
-      );
+  TelemetryPoint toTelemetry() {
+    if (!telemetryFields.any((k) => data[k] != null)) {
+      throw const FormatException('Unexpected live message: telemetry without any reading.');
+    }
+    _optional<num>(data, 'fps');
+    _optional<int>(data, 'outboxPending');
+    return TelemetryPoint(
+      time: ts,
+      msgId: msgId,
+      batteryPct: _optional<num>(data, 'batteryPct')?.toDouble(),
+      moistureRhPct: _optional<num>(data, 'moistureRhPct')?.toDouble(),
+      airTempC: _optional<num>(data, 'airTempC')?.toDouble(),
+      bollsHarvestedTotal: _optional<int>(data, 'bollsHarvestedTotal'),
+      solarActive: _optional<bool>(data, 'solarActive'),
+      airRhPct: _optional<num>(data, 'airRhPct')?.toDouble(),
+      dewpointC: _optional<num>(data, 'dewpointC')?.toDouble(),
+      receivedAt: receivedAt,
+    );
+  }
 
   /// The same row GET /detections returns for this message.
   Detection toDetection() => Detection(

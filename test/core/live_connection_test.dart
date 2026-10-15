@@ -176,6 +176,25 @@ void main() {
       expect(point.airTempC, isNull);
     });
 
+    liveTest('telemetry: a Phase II cart (no battery, weather only) is shown; an event with no reading is not', (tester) async {
+      final app = appWithDevice();
+      final dashboard = app.services.dashboard;
+      await openDashboard(tester, app);
+      final before = dashboard.data!;
+      app.live.ingest(kind: 'telemetry', deviceId: device, ts: '2026-10-01T15:00:05Z', data: {});
+      await tester.pump(Duration.zero);
+      expect(identical(dashboard.data, before), isTrue);
+      app.live.ingest(kind: 'telemetry', deviceId: device, ts: '2026-10-01T15:00:06Z',
+          data: {'airTempC': 31.5, 'airRhPct': 62.0, 'dewpointC': 23.4, 'fps': 4.2, 'outboxPending': 0});
+      await tester.pump(Duration.zero);
+      final point = dashboard.data!.telemetry!;
+      expect(point.batteryPct, isNull);
+      expect(point.airTempC, 31.5);
+      expect(point.airRhPct, 62.0);
+      expect(point.dewpointC, 23.4);
+      expect(point.moistureRhPct, isNull);
+    });
+
     liveTest('detection: label and confidence as reported; nothing else is derived from it', (tester) async {
       final app = appWithDevice();
       final dashboard = app.services.dashboard;

@@ -173,8 +173,9 @@ Duration? _optionalSeconds(Map<String, dynamic> json, String key) {
   return Duration(seconds: seconds);
 }
 
-/// One row of GET /api/v1/devices/{id}/telemetry. Only `batteryPct` is always present; every
-/// other reading is nullable in the contract and null means "no reading", never zero.
+/// One row of GET /api/v1/devices/{id}/telemetry. Every reading is nullable in the contract and
+/// null means "no reading", never zero. A device sends at least one reading per message, but a
+/// row can still have none of THESE columns (e.g. a cart heartbeat with only camera FPS).
 class TelemetryPoint {
   const TelemetryPoint({
     required this.time,
@@ -184,6 +185,8 @@ class TelemetryPoint {
     this.airTempC,
     this.bollsHarvestedTotal,
     this.solarActive,
+    this.airRhPct,
+    this.dewpointC,
     this.receivedAt,
   });
 
@@ -208,6 +211,13 @@ class TelemetryPoint {
   final int? bollsHarvestedTotal;
   final bool? solarActive;
 
+  /// AIR relative humidity in % (weather, from the cart's BME280). Used by the picking-window
+  /// rule; it is not boll moisture.
+  final double? airRhPct;
+
+  /// Dew point in °C, computed by the cart from air temperature and humidity.
+  final double? dewpointC;
+
   factory TelemetryPoint.fromJson(Map<String, dynamic> json) => TelemetryPoint(
         time: _time(json, 'time'),
         msgId: _require<String>(json, 'msgId'),
@@ -216,6 +226,8 @@ class TelemetryPoint {
         airTempC: _optionalNumber(json, 'airTempC'),
         bollsHarvestedTotal: _optional<int>(json, 'bollsHarvestedTotal'),
         solarActive: _optional<bool>(json, 'solarActive'),
+        airRhPct: _optionalNumber(json, 'airRhPct'),
+        dewpointC: _optionalNumber(json, 'dewpointC'),
         receivedAt: _optionalTime(json, 'receivedAt'),
       );
 }

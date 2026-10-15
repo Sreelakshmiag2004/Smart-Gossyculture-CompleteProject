@@ -326,7 +326,9 @@
             "enum": [
               "pest",
               "spray",
-              "harvest"
+              "harvest",
+              "scan",
+              "pick"
             ],
             "title": "Type",
             "type": "string"
@@ -726,6 +728,18 @@
       "TelemetryPoint": {
         "additionalProperties": false,
         "properties": {
+          "airRhPct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Air relative humidity (weather), used by the picking-window rule; not boll moisture",
+            "title": "Airrhpct"
+          },
           "airTempC": {
             "anyOf": [
               {
@@ -738,8 +752,16 @@
             "title": "Airtempc"
           },
           "batteryPct": {
-            "title": "Batterypct",
-            "type": "number"
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Omitted by devices without a battery monitor",
+            "title": "Batterypct"
           },
           "bollsHarvestedTotal": {
             "anyOf": [
@@ -751,6 +773,17 @@
               }
             ],
             "title": "Bollsharvestedtotal"
+          },
+          "dewpointC": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dewpointc"
           },
           "moistureRhPct": {
             "anyOf": [
@@ -2222,7 +2255,9 @@
                     "enum": [
                       "pest",
                       "spray",
-                      "harvest"
+                      "harvest",
+                      "scan",
+                      "pick"
                     ],
                     "type": "string"
                   },
@@ -2353,7 +2388,7 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Pest, spray and harvest events for one device, newest first",
+        "summary": "Pest, spray, harvest, scan and pick events for one device, newest first",
         "tags": [
           "telemetry"
         ]
