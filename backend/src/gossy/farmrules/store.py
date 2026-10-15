@@ -124,10 +124,7 @@ class FarmRulesStore:
                 pg_insert(farm_status).values(farm_id=farm_id, computed_at=now, doc=doc)
                 .on_conflict_do_update(index_elements=["farm_id"], set_={"computed_at": now, "doc": doc})
             )
-        if not plan.empty:
-            logic.log.info("farmrules_advisories_changed", extra={
-                "farm_id": str(farm_id), "created": [k for k, _ in plan.create], "updated": len(plan.update), "resolved": len(plan.resolve),
-            })
+        logic.log_plan(farm_id, plan)
         return doc
 
     async def save_weather(self, farm_id: uuid.UUID, fw: FarmWeather) -> None:

@@ -173,6 +173,17 @@ def reconcile(active: dict[str, ActiveAdvisory], new: list[Advisory], now: datet
     return plan
 
 
+def log_plan(farm_id, plan: Plan) -> None:
+    """Log advisory changes. Field names must not collide with LogRecord attributes such as
+    'created' or 'msg': logging raises KeyError for those (this was a 500 in 7b's first CI run)."""
+    if plan.empty:
+        return
+    log.info("farmrules_advisories_changed", extra={
+        "farm_id": str(farm_id), "advisories_created": [k for k, _ in plan.create],
+        "advisories_updated": len(plan.update), "advisories_resolved": len(plan.resolve),
+    })
+
+
 # ----------------------------------------------------------------------------- status
 def _segment_parts(key: str) -> tuple[int, int]:
     row, seg = key.split("-")  # "R003-S02"

@@ -2,7 +2,10 @@
 The SQL and the API are covered by tests/integration/test_farmrules.py."""
 
 import asyncio
+import logging
+import re
 import uuid
+from pathlib import Path
 from datetime import UTC, date, datetime, timedelta
 from types import SimpleNamespace
 
@@ -258,3 +261,34 @@ def test_engine_copy_is_used_for_dates_in_indian_time():
     obs = [ManualObservation(FARM, date(2027, 1, 18), "aphid_infested_plants", 5, 20)]
     c = logic.compute(FARM, late, logic.FarmInputs(manual=obs), None)
     assert [a.pest for a in c.report.advisories] == ["aphid"]
+
+
+# ----------------------------------------------------------------------------- logging
+def test_advisory_change_log_works_with_info_logging_enabled():
+    # Regression (7b CI): a log field named "created" made every recompute that created advice
+    # fail with HTTP 500, but only where INFO logging is on (the API), not in the unit tests.
+    c = logic.compute(FARM, NOW, logic.FarmInputs(scans=logic.scans_from_events(FARM, [scan(3, 2, 20, 10)])), None)
+    plan = logic.reconcile({}, c.report.advisories, NOW)
+    records = []
+    handler = logging.Handler(logging.INFO)
+    handler.emit = records.append
+    logger = logging.getLogger("gossy.farmrules")
+    old_level = logger.level
+    logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
+    try:
+        logic.log_plan(uuid.uuid4(), plan)
+    finally:
+        logger.removeHandler(handler)
+        logger.setLevel(old_level)
+    assert [r.advisories_created for r in records] == [["PICK_LIST:crop"]]
+
+
+def test_no_log_field_collides_with_logrecord_attributes():
+    reserved = set(vars(logging.LogRecord("n", logging.INFO, "p", 1, "m", None, None))) | {"message", "asctime"}
+    src = Path(logic.__file__).parent
+    keys = set()
+    for f in src.glob("*.py"):
+        for block in re.findall(r"extra=\{(.*?)\}\)", f.read_text(), re.S):
+            keys |= set(re.findall(r'"(\w+)":', block))
+    assert keys and not keys & reserved, keys & reserved
