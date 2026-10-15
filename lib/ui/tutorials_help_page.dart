@@ -109,8 +109,8 @@ class _TutorialsHelpPageState extends State<TutorialsHelpPage> {
                   ),
                   const SizedBox(height: 12),
                    _buildStepText(
-                    'Analyzing Graphs', 
-                    'Tap on the graphs in the Harvest Logs page to see historical trends. Sudden drops in growth rate often indicate pest stress or nutrient deficiency.'
+                    'Reading the Field page',
+                    'The "Field" tab shows, for each row segment the cart scanned, how much of the cotton is open, whether it is safe to pick now, and the advice from the farm rules in English or Tamil.'
                   ),
                   const SizedBox(height: 24),
                 ],
@@ -149,8 +149,8 @@ class _TutorialsHelpPageState extends State<TutorialsHelpPage> {
             // Logging Your Harvest Section
             _buildTutorialSection(
               icon: Icons.inventory_2_outlined,
-              title: 'Logging Your Harvest',
-              description: 'Record yields and export reports.',
+              title: 'Field Data and Advice',
+              description: 'Trap counts, scouting counts and picking advice.',
               isExpanded: harvestExpanded,
               onToggle: () => setState(() => harvestExpanded = !harvestExpanded),
               expandedContent: Column(
@@ -158,18 +158,18 @@ class _TutorialsHelpPageState extends State<TutorialsHelpPage> {
                 children: [
                   const SizedBox(height: 16),
                    _buildStepText(
-                    'Digital Logbook', 
-                    'In the "Logs" tab, you can manually add entries for each harvest batch. Record the weight (bales), quality status, and date.'
+                    'Entering field data',
+                    'In the "Field" tab, record pheromone-trap counts, scouting counts (for example aphid-infested plants out of 20 examined) and whether a camera detection was right. The advice updates as soon as you save.'
                   ),
                   const SizedBox(height: 12),
                    _buildStepText(
-                    'Exporting Data', 
-                    'Need to share data with buyers or insurers? Use the "Export" button in Harvest Logs to download a neatly formatted Excel sheet of your season\'s performance.'
+                    'Following the advice',
+                    'Pest advice follows the published economic thresholds. While cotton is ready to pick, spraying advice is held back: pick first. For mealybug, treat only the marked spots, never the whole field.'
                   ),
                   const SizedBox(height: 12),
                   _buildInfoBox(
                     Icons.storefront_outlined, 
-                    'Verified harvest logs increase your credibility when selling on the Marketplace.'
+                    'Ask your agriculture officer before any spray, and always follow the product label.'
                   ),
                   const SizedBox(height: 24),
                 ],

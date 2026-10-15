@@ -12,6 +12,8 @@ import 'auth/session_controller.dart';
 import 'auth/token_store.dart';
 import 'dashboard/dashboard_controller.dart';
 import 'dashboard/dashboard_repository.dart';
+import 'farm/farm_controller.dart';
+import 'farm/farm_repository.dart';
 import 'onboarding/onboarding_repository.dart';
 import 'pest/pest_history_controller.dart';
 import 'pest/pest_history_repository.dart';
@@ -20,7 +22,7 @@ import 'realtime/live_socket.dart';
 
 /// The app's services, built once at start-up and handed to the widget tree through [AppScope].
 class AppServices {
-  AppServices._({required this.config, required this.session, required this.auth, required this.onboarding, required this.dashboard, required this.alerts, required this.pestHistory, required this.live, required this.api});
+  AppServices._({required this.config, required this.session, required this.auth, required this.onboarding, required this.dashboard, required this.alerts, required this.pestHistory, required this.farm, required this.live, required this.api});
 
   /// [adapter], [tokens], [clock], [liveConnector] and [random] exist for tests; the app uses
   /// the defaults.
@@ -40,6 +42,8 @@ class AppServices {
     // The Pest page's history follows the dashboard's selected device and receives new rows
     // from the same events of the same connection.
     final pestHistory = PestHistoryController(PestHistoryRepository(api: api), dashboard);
+    // Phase II farm rules: status and advice of the caller's farms (Field page).
+    final farm = FarmController(FarmRepository(api: api));
     dashboard
       ..onLiveEvent = (event) {
         alerts.onLiveEvent(event);
@@ -56,8 +60,9 @@ class AppServices {
       if (dashboard.phase != DashboardPhase.idle) dashboard.reset();
       alerts.reset();
       pestHistory.reset();
+      farm.reset();
     });
-    return AppServices._(config: config, session: session, auth: auth, onboarding: OnboardingRepository(api: api), dashboard: dashboard, alerts: alerts, pestHistory: pestHistory, live: live, api: api);
+    return AppServices._(config: config, session: session, auth: auth, onboarding: OnboardingRepository(api: api), dashboard: dashboard, alerts: alerts, pestHistory: pestHistory, farm: farm, live: live, api: api);
   }
 
   final AppConfig config;
@@ -71,6 +76,9 @@ class AppServices {
 
   /// Detection and spray history of the dashboard's selected device (Pest page).
   final PestHistoryController pestHistory;
+
+  /// Status and advice of the caller's farms from the backend's farm rules (Field page).
+  final FarmController farm;
 
   /// The live channel connection, opened and closed by [dashboard].
   final LiveConnection live;

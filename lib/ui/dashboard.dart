@@ -6,7 +6,7 @@ import '../core/dashboard/dashboard_controller.dart';
 import '../core/formatting.dart';
 import '../core/models.dart';
 import '../core/realtime/live_connection.dart';
-import 'Harvest.dart';
+import 'field_page.dart';
 import 'onboarding_gate_page.dart';
 import 'pest_alerts_page.dart';
 import 'settings_profile_page.dart';
@@ -249,12 +249,12 @@ class _DashboardState extends State<Dashboard> with WidgetsBindingObserver {
                         onTap: () {},
                       ),
                       _DashboardButton(
-                        icon: Icons.list_alt,
-                        label: 'Logs',
+                        icon: Icons.grass_rounded,
+                        label: 'Field',
                         color: const Color(0xFF5FA62C),
                         onTap: () {
                            Navigator.of(context).pushReplacement(
-                            MaterialPageRoute(builder: (context) => const Harvest()),
+                            MaterialPageRoute(builder: (context) => const FieldPage()),
                           );
                         },
                       ),

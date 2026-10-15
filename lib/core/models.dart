@@ -78,12 +78,32 @@ class TokenPair {
 }
 
 class Farm {
-  const Farm({required this.id, required this.name});
+  const Farm({required this.id, required this.name, this.latitude, this.longitude, this.access = owner});
+
+  static const String owner = 'owner';
+  static const String operator = 'operator';
 
   final String id;
   final String name;
 
-  factory Farm.fromJson(Map<String, dynamic> json) => Farm(id: _require<String>(json, 'id'), name: _require<String>(json, 'name'));
+  /// The farm's location for the rain forecast; null until the owner sets it (Phase II 7b).
+  final double? latitude;
+  final double? longitude;
+
+  /// `owner`, or `operator` when the owner added the caller to enter field data. A backend from
+  /// before Phase II 7b sends no `access`: every farm it lists is the caller's own.
+  final String access;
+
+  bool get isOwner => access == owner;
+  bool get hasLocation => latitude != null && longitude != null;
+
+  factory Farm.fromJson(Map<String, dynamic> json) => Farm(
+        id: _require<String>(json, 'id'),
+        name: _require<String>(json, 'name'),
+        latitude: _optionalNumber(json, 'latitude'),
+        longitude: _optionalNumber(json, 'longitude'),
+        access: _optional<String>(json, 'access') ?? owner,
+      );
 }
 
 /// A nullable contract field: absent or null is fine, a wrong type is a contract violation.

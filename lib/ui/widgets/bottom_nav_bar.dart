@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../dashboard.dart';
-import '../Harvest.dart';
+import '../field_page.dart';
 import '../pest_alerts_page.dart';
 import '../settings_profile_page.dart';
 
@@ -36,7 +36,7 @@ class CommonBottomNavBar extends StatelessWidget {
               nextPage = const Dashboard();
               break;
             case 1:
-              nextPage = const Harvest();
+              nextPage = const FieldPage();
               break;
             case 2:
               nextPage = const PestAlertsPage();
@@ -81,13 +81,13 @@ class CommonBottomNavBar extends StatelessWidget {
           BottomNavigationBarItem(
             icon: Padding(
               padding: EdgeInsets.only(bottom: 4),
-              child: Icon(Icons.article_outlined), // Professional 'Logs' icon
+              child: Icon(Icons.grass_outlined), // the farm's field: advice, readiness map, field data
             ),
             activeIcon: Padding(
               padding: EdgeInsets.only(bottom: 4),
-              child: Icon(Icons.article_rounded),
+              child: Icon(Icons.grass_rounded),
             ),
-            label: 'Logs',
+            label: 'Field',
           ),
           BottomNavigationBarItem(
             icon: Padding(

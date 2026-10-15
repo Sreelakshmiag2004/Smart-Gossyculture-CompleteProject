@@ -14,8 +14,8 @@ Software for the BollBot Phase II specification: a cotton harvest-timing and pes
 | 6 | Farm rules service (storage-independent) + Open-Meteo forecast; local demo runner | `cloud/` | **Done** (Firebase deployment retired, see 7) |
 | 7a | Integration with the team backend: MQTT contract `bollbot/v1` extended (scan, pick); cart publishes to the backend broker | `edge/contract.py`, `edge/sync.py` + backend patch | **Done** |
 | 7b | Backend: farm rules (this engine, copied unchanged), advisories + farm status, trap/scouting/confirmation API, hourly forecast worker, farm operators | `backend/src/gossy/farmrules` | **Done** (see `backend/docs/farm-rules.md`) |
-| 7c | Flutter app: field map, picking window, scouting entry, Tamil advisories (existing app extended) | `lib/` | Next |
-| 8 | Experiment analysis notebooks E1–E11 | `experiments/` | |
+| 7c | Flutter app: Field tab with advice (English/Tamil), picking window, segment readiness map, pest thresholds; trap/scouting/detection entry; farm location and operators (replaces the mock Harvest page) | `lib/ui/field_page.dart`, `lib/core/farm/` | **Done** |
+| 8 | Experiment analysis notebooks E1–E11 | `experiments/` | Next |
 
 **Tests: 149 Python + 94 firmware passing** in this repo (41 core, 13 ML, 19 QA regression, 19 cart, 11 actuator link, 20 harvesting, 13 farm rules, 13 contract/uploader), plus **100 backend contract checks** run against the team backend's own validation code. QA report of 14 Oct 2026: all 16 bugs fixed.
 

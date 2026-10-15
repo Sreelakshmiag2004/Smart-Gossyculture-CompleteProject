@@ -404,7 +404,7 @@ void main() {
       final app = farmer();
       await startApp(tester, app);
       await openPests(tester);
-      await tester.tap(find.text('Logs'));
+      await tester.tap(find.text('Field'));
       await tester.pumpAndSettle();
       expect(find.byType(PestAlertsPage), findsNothing);
       expect(app.live.openSockets, isEmpty);
@@ -413,7 +413,7 @@ void main() {
       expect(historyCalls(app).length, calls);
       expect(app.services.pestHistory.detections.rows, isEmpty);
 
-      // and directly from Logs to Pests: the page reads the dashboard's snapshot first, then connects
+      // and directly from Field to Pests: the page reads the dashboard's snapshot first, then connects
       await tester.tap(find.text('Pests'));
       await tester.pumpAndSettle();
       expect(find.byType(PestAlertsPage), findsOneWidget);

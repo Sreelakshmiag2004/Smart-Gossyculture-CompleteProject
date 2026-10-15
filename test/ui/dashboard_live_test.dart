@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:smart_gossy_culture_app/core/formatting.dart';
 import 'package:smart_gossy_culture_app/core/realtime/live_connection.dart';
-import 'package:smart_gossy_culture_app/ui/Harvest.dart';
+import 'package:smart_gossy_culture_app/ui/field_page.dart';
 import 'package:smart_gossy_culture_app/ui/dashboard.dart';
 import 'package:smart_gossy_culture_app/ui/settings_profile_page.dart';
 import 'package:smart_gossy_culture_app/ui/sign_in_page.dart';
@@ -234,11 +234,11 @@ void main() {
     final socket = app.live.sockets.single;
     expect(socket.isOpen, isTrue);
 
-    // "Logs" replaces the dashboard with the Harvest page: the Dashboard widget is disposed.
-    await tester.ensureVisible(find.text('Logs').first);
-    await tester.tap(find.text('Logs').first);
+    // "Field" replaces the dashboard with the Field page: the Dashboard widget is disposed.
+    await tester.ensureVisible(find.text('Field').first);
+    await tester.tap(find.text('Field').first);
     await tester.pumpAndSettle();
-    expect(find.byType(Harvest), findsOneWidget);
+    expect(find.byType(FieldPage), findsOneWidget);
     expect(find.byType(Dashboard), findsNothing);
     expect(socket.closedByClient, isTrue);
     expect(app.live.openSockets, isEmpty);
@@ -256,8 +256,8 @@ void main() {
     expect(app.services.live.state, LiveState.reconnecting);
     final attempts = app.live.attempts.length;
 
-    await tester.ensureVisible(find.text('Logs').first);
-    await tester.tap(find.text('Logs').first);
+    await tester.ensureVisible(find.text('Field').first);
+    await tester.tap(find.text('Field').first);
     await tester.pumpAndSettle();
     expect(find.byType(Dashboard), findsNothing);
     app.live.outage = LiveOutage.none;

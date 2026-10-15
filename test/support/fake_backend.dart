@@ -151,6 +151,50 @@ class FakeBackend implements HttpClientAdapter {
         'details': details, 'acknowledgedAt': acknowledgedAt,
       };
 
+  // ---- Phase II farm rules (7b/7c): backend/src/gossy/farmrules
+  /// farmId -> FarmStatus as GET /farms/{id}/status returns it. Missing: "not computed yet".
+  final Map<String, Map<String, Object?>> farmStatus = {};
+
+  /// farmId -> advisories (active and resolved), most recent first.
+  final Map<String, List<Map<String, Object?>>> farmAdvisories = {};
+
+  /// GET /farm-rules/catalog (a subset of the real rules, same shape).
+  List<Map<String, Object?>> pestCatalog = [
+    pestRule('aphid', 'Aphid', 'அசுவினி', ruleType: 'percent_units', observation: 'aphid_infested_plants', threshold: 10, comparison: '>', minUnits: 20),
+    pestRule('jassid', 'Jassid (leafhopper)', 'தத்துப்பூச்சி', ruleType: 'mean_per_unit', observation: 'jassid_per_leaf', threshold: 2, comparison: '>', minUnits: 25),
+    pestRule('mealybug', 'Mealybug', 'மாவுப்பூச்சி', ruleType: 'percent_units', observation: 'mealybug_grade2_plants', threshold: 10, comparison: '>=', minUnits: 41, action: 'SPOT_TREAT'),
+    pestRule('pink_bollworm_trap', 'Pink bollworm (pheromone trap)', 'இளஞ்சிவப்பு காய்ப்புழு', ruleType: 'consecutive_nights', trapPrefix: 'PBW', threshold: 8, comparison: '>='),
+  ];
+
+  /// Called for every accepted data entry (traps, observations, confirmations): tests use it to
+  /// change [farmStatus] / [farmAdvisories] as the backend's rules would.
+  void Function(RecordedCall call)? onFarmEntry;
+  int _records = 0;
+
+  static Map<String, Object?> pestRule(String pest, String nameEn, String nameTa, {required String ruleType, String? observation, String? trapPrefix, required num threshold, required String comparison, int? minUnits, String action = 'ADVISORY'}) => {
+        'pest': pest, 'nameEn': nameEn, 'nameTa': nameTa, 'ruleType': ruleType, 'evidence': trapPrefix != null ? 'trap' : 'manual',
+        'observation': observation, 'trapPrefix': trapPrefix, 'threshold': threshold, 'comparison': comparison, 'minUnits': minUnits, 'nights': trapPrefix != null ? 3 : null, 'action': action,
+      };
+
+  static Map<String, Object?> segmentRow(int row, int segment, {required String status, num? readiness, int openBolls = 0, String scannedAt = '2026-10-01T09:00:00Z'}) => {
+        'key': 'R${row.toString().padLeft(3, '0')}-S${segment.toString().padLeft(2, '0')}', 'row': row, 'segment': segment,
+        'readiness': readiness, 'status': status, 'openBolls': openBolls, 'scannedAt': scannedAt,
+      };
+
+  static Map<String, Object?> statusRow(String farmId, {String computedAt = '2026-10-01T10:00:00Z', List<Map<String, Object?>> segments = const [], Map<String, Object?>? window, Map<String, Object?>? weatherNow, num? rainLast24hMm, num? rainMaxProb48hPct, List<Map<String, Object?>> pests = const []}) => {
+        'farmId': farmId, 'computedAt': computedAt, 'segments': segments, 'window': window, 'weatherNow': weatherNow,
+        'forecastFetchedAt': null, 'rainLast24HMm': rainLast24hMm, 'rainMaxProb48HPct': rainMaxProb48hPct, 'pests': pests,
+      };
+
+  static Map<String, Object?> pestStatusRow(String pest, {bool crossed = false, bool insufficient = false, num? value, required num threshold, String action = 'ADVISORY', String detail = ''}) => {
+        'pest': pest, 'crossed': crossed, 'insufficient': insufficient, 'value': value, 'threshold': threshold, 'action': action, 'detail': detail, 'segments': <String>[],
+      };
+
+  static Map<String, Object?> advisoryRow(String id, String type, {String? pest, List<String> segments = const [], String textEn = 'English text', String textTa = 'தமிழ் உரை', bool active = true, String at = '2026-10-01T10:00:00Z'}) => {
+        'id': id, 'type': type, 'pest': pest, 'segments': segments, 'reason': 'reason for the operator', 'textEn': textEn, 'textTa': textTa,
+        'active': active, 'createdAt': at, 'updatedAt': at, 'resolvedAt': active ? null : at,
+      };
+
   int count(String method, String path) => calls.where((c) => c.method == method && c.path == path).length;
 
   /// The backend stops accepting the current access token (as if its 15 minutes had passed).
@@ -287,6 +331,8 @@ class FakeBackend implements HttpClientAdapter {
       if (alerts[index]['status'] == 'open') alerts[index] = {...alerts[index], 'status': 'acknowledged', 'acknowledgedAt': acknowledgeTime};
       return FakeReply(200, alerts[index]);
     }
+    final farmReply = _farmRules(call, body);
+    if (farmReply != null) return farmReply;
     final eventsPath = RegExp(r'^/api/v1/devices/([^/]+)/events$').firstMatch(call.path);
     if (call.method == 'GET' && eventsPath != null) {
       final deviceId = Uri.decodeComponent(eventsPath.group(1)!);
@@ -301,6 +347,41 @@ class FakeBackend implements HttpClientAdapter {
       return FakeReply(200, _page(telemetry[deviceId] ?? const [], call.query));
     }
     return FakeReply.error(404, 'not_found');
+  }
+
+  /// Farm-rules endpoints (backend/src/gossy/farmrules/routes.py). Only the caller's farms exist.
+  FakeReply? _farmRules(RecordedCall call, Map body) {
+    if (call.method == 'GET' && call.path == '/api/v1/farm-rules/catalog') return FakeReply(200, pestCatalog);
+    final match = RegExp(r'^/api/v1/farms/([^/]+)(/.*)?$').firstMatch(call.path);
+    if (match == null) return null;
+    final farmId = Uri.decodeComponent(match.group(1)!);
+    final rest = match.group(2) ?? '';
+    final farmIndex = farms.indexWhere((f) => f['id'] == farmId);
+    if (farmIndex < 0) return FakeReply.error(404, 'not_found');
+    final status = farmStatus[farmId] ?? {'farmId': farmId, 'computedAt': null, 'segments': <Object?>[], 'window': null, 'weatherNow': null, 'forecastFetchedAt': null, 'rainLast24HMm': null, 'rainMaxProb48HPct': null, 'pests': <Object?>[]};
+    switch ('${call.method} $rest') {
+      case 'PATCH ':
+        farms[farmIndex] = {...farms[farmIndex], for (final key in ['name', 'latitude', 'longitude']) if (body.containsKey(key)) key: body[key]};
+        return FakeReply(200, farms[farmIndex]);
+      case 'GET /status':
+      case 'POST /status/recompute':
+        return FakeReply(200, status);
+      case 'GET /advisories':
+        final active = call.query['active'];
+        final rows = (farmAdvisories[farmId] ?? const []).where((a) => active == null || a['active'] == (active == 'true')).toList();
+        return FakeReply(200, _page(rows, call.query));
+      case 'POST /traps':
+      case 'POST /observations':
+      case 'POST /confirmations':
+        onFarmEntry?.call(call);
+        _records++;
+        return FakeReply(201, {...body.cast<String, Object?>(), 'id': 'record-$_records', 'recordedAt': '2026-10-01T10:00:00Z', 'recordedBy': _user['id']});
+      case 'GET /members':
+        return const FakeReply(200, <Object?>[]);
+      case 'POST /members':
+        return FakeReply(201, {'userId': '22222222-2222-2222-2222-222222222222', 'phone': body['phone'], 'displayName': null, 'role': 'operator', 'addedAt': '2026-10-01T10:00:00Z'});
+    }
+    return null;
   }
 
   /// Newest-first paging as in the contract. The fake's opaque cursor is "after-<offset>".

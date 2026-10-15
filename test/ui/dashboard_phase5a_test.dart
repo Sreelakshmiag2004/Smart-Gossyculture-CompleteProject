@@ -214,8 +214,8 @@ void main() {
     expect(textOf(tester, 'powerValue'), '77%');
 
     // leaving the dashboard closes the socket and leaves no timer behind
-    await tester.ensureVisible(find.text('Logs').first);
-    await tester.tap(find.text('Logs').first);
+    await tester.ensureVisible(find.text('Field').first);
+    await tester.tap(find.text('Field').first);
     await tester.pumpAndSettle();
     expect(find.byType(Dashboard), findsNothing);
     expect(app.live.openSockets, isEmpty);

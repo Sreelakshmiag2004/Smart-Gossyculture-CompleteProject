@@ -76,8 +76,8 @@ void main() {
       expect(textOf(tester, 'powerValue'), '80%');
 
       // Leaving the last dashboard page still closes the connection.
-      await tester.ensureVisible(find.text('Logs').first);
-      await tester.tap(find.text('Logs').first);
+      await tester.ensureVisible(find.text('Field').first);
+      await tester.tap(find.text('Field').first);
       await tester.pumpAndSettle();
       expect(find.byType(Dashboard), findsNothing);
       expect(app.live.openSockets, isEmpty);
@@ -380,8 +380,8 @@ void main() {
       app.live.expireTokens();
       await tester.pumpAndSettle();
       final attempts = app.live.attempts.length;
-      await tester.ensureVisible(find.text('Logs').first);
-      await tester.tap(find.text('Logs').first);
+      await tester.ensureVisible(find.text('Field').first);
+      await tester.tap(find.text('Field').first);
       await tester.pumpAndSettle();
       expect(find.byType(Dashboard), findsNothing);
       await tester.pump(const Duration(hours: 1));
