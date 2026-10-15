@@ -6,7 +6,7 @@ integration tests insert and query through these definitions against the migrate
 
 from __future__ import annotations
 
-from sqlalchemy import BigInteger, Boolean, Column, DateTime, Float, ForeignKey, Identity, Integer, MetaData, String, Table, Text, Uuid, text
+from sqlalchemy import BigInteger, Boolean, Column, Date, DateTime, Float, ForeignKey, Identity, Integer, MetaData, String, Table, Text, Uuid, text
 from sqlalchemy.dialects.postgresql import JSONB
 
 metadata = MetaData()
@@ -104,6 +104,8 @@ farms = Table(
     Column("owner_user_id", Uuid, ForeignKey("users.id"), nullable=False),
     Column("name", String(80), nullable=False),
     Column("created_at", DateTime(timezone=True), nullable=False),
+    Column("latitude", Float),   # 0004: farm location for the rain forecast (both or neither)
+    Column("longitude", Float),
 )
 
 # Device registry. device_id equals the MQTT username / topic deviceId.
@@ -187,4 +189,107 @@ audit_log = Table(
     Column("request_id", String(64)),
     Column("client_ip", String(64)),
     Column("details", JSONB, nullable=False),
+)
+
+
+# --------------------------------------------------------------------------- farm rules (Phase II, 0004)
+# The runtime role has no DELETE privilege: "removing" a record sets removed_at / deleted_at.
+
+# Operators: people who scout and enter data for a farm they do not own (added by the owner).
+farm_members = Table(
+    "farm_members",
+    metadata,
+    Column("farm_id", Uuid, ForeignKey("farms.id"), primary_key=True),
+    Column("user_id", Uuid, ForeignKey("users.id"), primary_key=True),
+    Column("role", String(16), nullable=False),  # operator
+    Column("added_at", DateTime(timezone=True), nullable=False),
+    Column("added_by", Uuid, ForeignKey("users.id"), nullable=False),
+    Column("removed_at", DateTime(timezone=True)),
+)
+
+# Pheromone-trap counts: moths in one trap for one night. One live row per (farm, trap, night).
+trap_counts = Table(
+    "trap_counts",
+    metadata,
+    Column("id", Uuid, primary_key=True, server_default=_UUID_DEFAULT),
+    Column("farm_id", Uuid, ForeignKey("farms.id"), nullable=False),
+    Column("trap", String(32), nullable=False),
+    Column("night", Date, nullable=False),
+    Column("moths", Integer, nullable=False),
+    Column("recorded_by", Uuid, ForeignKey("users.id"), nullable=False),
+    Column("recorded_at", DateTime(timezone=True), nullable=False),
+    Column("deleted_at", DateTime(timezone=True)),
+)
+
+# Manual scouting counts, e.g. 5 aphid-infested plants out of 20 examined.
+scouting_observations = Table(
+    "scouting_observations",
+    metadata,
+    Column("id", Uuid, primary_key=True, server_default=_UUID_DEFAULT),
+    Column("farm_id", Uuid, ForeignKey("farms.id"), nullable=False),
+    Column("observed_on", Date, nullable=False),
+    Column("observation", String(64), nullable=False),
+    Column("count", Integer, nullable=False),
+    Column("units", Integer, nullable=False),
+    Column("row_no", Integer),
+    Column("segment_no", Integer),
+    Column("recorded_by", Uuid, ForeignKey("users.id"), nullable=False),
+    Column("recorded_at", DateTime(timezone=True), nullable=False),
+    Column("deleted_at", DateTime(timezone=True)),
+)
+
+# A person checked a camera detection on the plant: confirmed or rejected. Confirmations say
+# WHERE (mealybug spot treatment), never WHETHER: thresholds use the field sample.
+detection_confirmations = Table(
+    "detection_confirmations",
+    metadata,
+    Column("id", Uuid, primary_key=True, server_default=_UUID_DEFAULT),
+    Column("farm_id", Uuid, ForeignKey("farms.id"), nullable=False),
+    Column("observed_on", Date, nullable=False),
+    Column("row_no", Integer, nullable=False),
+    Column("segment_no", Integer, nullable=False),
+    Column("class_name", String(32), nullable=False),
+    Column("verdict", String(16), nullable=False),  # confirmed | rejected
+    Column("source_msg_id", String(26)),
+    Column("recorded_by", Uuid, ForeignKey("users.id"), nullable=False),
+    Column("recorded_at", DateTime(timezone=True), nullable=False),
+    Column("deleted_at", DateTime(timezone=True)),
+)
+
+# Advice produced by the rules. At most one ACTIVE row per (farm, key); resolved rows are history.
+farm_advisories = Table(
+    "farm_advisories",
+    metadata,
+    Column("id", Uuid, primary_key=True, server_default=_UUID_DEFAULT),
+    Column("farm_id", Uuid, ForeignKey("farms.id"), nullable=False),
+    Column("key", String(96), nullable=False),
+    Column("type", String(16), nullable=False),
+    Column("pest", String(48)),
+    Column("reason", String(512), nullable=False),
+    Column("segments", JSONB, nullable=False),
+    Column("text_en", Text, nullable=False),
+    Column("text_ta", Text, nullable=False),
+    Column("active", Boolean, nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+    Column("updated_at", DateTime(timezone=True), nullable=False),
+    Column("notified_at", DateTime(timezone=True)),
+    Column("resolved_at", DateTime(timezone=True)),
+)
+
+# Latest computed status per farm (segment readiness, picking window, weather, pest findings).
+farm_status = Table(
+    "farm_status",
+    metadata,
+    Column("farm_id", Uuid, ForeignKey("farms.id"), primary_key=True),
+    Column("computed_at", DateTime(timezone=True), nullable=False),
+    Column("doc", JSONB, nullable=False),
+)
+
+# Cached Open-Meteo forecast per farm (refreshed hourly by the farm-rules worker).
+farm_weather = Table(
+    "farm_weather",
+    metadata,
+    Column("farm_id", Uuid, ForeignKey("farms.id"), primary_key=True),
+    Column("fetched_at", DateTime(timezone=True), nullable=False),
+    Column("doc", JSONB, nullable=False),
 )

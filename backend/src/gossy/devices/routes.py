@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, Query
 
 from gossy.api.deps import AdminPrincipal, ClientIp, CurrentPrincipal, service
 from gossy.api.errors import responses
-from gossy.devices.schemas import AdminDeviceCreate, ClaimRequest, Device, Farm, FarmCreate, ProvisionedDevice, RegistrationState
+from gossy.devices.schemas import AdminDeviceCreate, ClaimRequest, Device, Farm, FarmCreate, FarmUpdate, ProvisionedDevice, RegistrationState
 from gossy.devices.service import DeviceService
 
 router = APIRouter(prefix="/api/v1")
@@ -21,14 +21,19 @@ async def create_farm(body: FarmCreate, principal: CurrentPrincipal, svc: Device
     return await svc.create_farm(principal, body.name)
 
 
-@router.get("/farms", response_model=list[Farm], responses=responses(401), tags=["farms"], summary="Farms owned by the caller")
+@router.get("/farms", response_model=list[Farm], responses=responses(401), tags=["farms"], summary="Farms the caller owns, then farms the caller operates")
 async def list_farms(principal: CurrentPrincipal, svc: Devices) -> list[Farm]:
     return await svc.list_farms(principal)
 
 
-@router.get("/farms/{farm_id}", response_model=Farm, responses=responses(401, 404), tags=["farms"], summary="One farm owned by the caller")
+@router.get("/farms/{farm_id}", response_model=Farm, responses=responses(401, 404), tags=["farms"], summary="One farm the caller owns or operates")
 async def get_farm(farm_id: uuid.UUID, principal: CurrentPrincipal, svc: Devices) -> Farm:
     return await svc.get_farm(principal, farm_id)
+
+
+@router.patch("/farms/{farm_id}", response_model=Farm, responses=responses(401, 403, 404, 422), tags=["farms"], summary="Rename a farm or set its location (owner only)")
+async def update_farm(farm_id: uuid.UUID, body: FarmUpdate, principal: CurrentPrincipal, svc: Devices) -> Farm:
+    return await svc.update_farm(principal, farm_id, body)
 
 
 @router.get("/devices", response_model=list[Device], responses=responses(401, 422), tags=["devices"], summary="Active devices on the caller's farms, with status")

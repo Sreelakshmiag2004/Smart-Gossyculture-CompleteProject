@@ -14,6 +14,14 @@ MUTATING = {
     ("patch", "/api/v1/me"), ("post", "/api/v1/farms"), ("post", "/api/v1/devices/claim"),
     ("post", "/api/v1/alerts/{alert_id}/acknowledge"),
     ("post", "/api/v1/admin/devices"), ("post", "/api/v1/admin/devices/{device_id}/claim-code"), ("post", "/api/v1/admin/devices/{device_id}/decommission"),
+    # Phase II farm rules (7b): farm location and operators; data entry; re-running the rules.
+    # None of these reaches a device: they change farm records and advice only.
+    ("patch", "/api/v1/farms/{farm_id}"),
+    ("post", "/api/v1/farms/{farm_id}/members"), ("delete", "/api/v1/farms/{farm_id}/members/{user_id}"),
+    ("post", "/api/v1/farms/{farm_id}/status/recompute"),
+    ("post", "/api/v1/farms/{farm_id}/traps"), ("delete", "/api/v1/farms/{farm_id}/traps/{record_id}"),
+    ("post", "/api/v1/farms/{farm_id}/observations"), ("delete", "/api/v1/farms/{farm_id}/observations/{record_id}"),
+    ("post", "/api/v1/farms/{farm_id}/confirmations"), ("delete", "/api/v1/farms/{farm_id}/confirmations/{record_id}"),
 }
 FORBIDDEN_WORDS = ("command", "control", "actuat", "spray-now", "harvest-now", "/pick", "/move", "/stop", "/start")
 

@@ -173,6 +173,24 @@ services:
       retries: 20
     restart: unless-stopped
 
+  farmrules:
+    <<: *backend-image
+    # Farm rules worker: re-runs every farm's rules each minute and refreshes the Open-Meteo
+    # forecast hourly for farms with a location. Needs internet for the forecast; set
+    # GOSSY_FARMRULES_WEATHER_ENABLED=false to run offline (the pest rules still work).
+    command: ["python", "-m", "gossy.farmrules"]
+    environment:
+      <<: *backend-common-env
+      GOSSY_DB_USER: gossy_app
+      GOSSY_DB_PASSWORD_FILE: /run/gossy-secrets/db/app.password
+      GOSSY_FARMRULES_WEATHER_ENABLED: ${GOSSY_DEV_FARMRULES_WEATHER:-true}
+    volumes:
+      - *secrets-ro
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
   simulator:
     <<: *backend-image
     profiles: ["simulator"]

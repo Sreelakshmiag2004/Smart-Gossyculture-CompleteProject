@@ -131,6 +131,21 @@ class ApiSettings(BaseSettings):
         return self
 
 
+class FarmRulesSettings(BaseSettings):
+    """Farm-rules worker (python -m gossy.farmrules): re-runs every farm's rules and keeps the
+    rain forecast fresh. The API also re-runs a farm's rules right after data entry."""
+
+    model_config = SettingsConfigDict(env_prefix="GOSSY_FARMRULES_", extra="ignore")
+
+    # How often every farm is recomputed (new cart scans are picked up within this time).
+    interval_s: float = Field(default=60.0, ge=5, le=3600)
+    # Forecast refresh per farm with a location (Open-Meteo hourly data).
+    weather_enabled: bool = True
+    weather_refresh_s: float = Field(default=3600.0, ge=300, le=86_400)
+    weather_api_url: str = "https://api.open-meteo.com/v1/forecast"
+    weather_timeout_s: float = Field(default=15.0, gt=0, le=120)
+
+
 E164_PATTERN = r"^\+[1-9][0-9]{7,14}$"
 _E164_RE = re.compile(E164_PATTERN)
 TEST_PHONE_PREFIX = "+999"

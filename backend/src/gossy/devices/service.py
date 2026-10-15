@@ -20,12 +20,12 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import and_, select, update
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from gossy.api.errors import ApiError, not_found
+from gossy.api.errors import ApiError, forbidden, not_found
 from gossy.audit import audit
 from gossy.auth.service import Principal
 from gossy.contracts.topics import is_valid_device_id
-from gossy.db.tables import device_status, devices, farms
-from gossy.devices.schemas import Device, DeviceStatus, Farm
+from gossy.db.tables import device_status, devices, farm_members, farms
+from gossy.devices.schemas import Device, DeviceStatus, Farm, FarmUpdate
 from gossy.security.otp import codes_match, hash_code, new_claim_code
 from gossy.security.ratelimit import RateLimited, SlidingWindowLimiter
 
@@ -38,8 +38,12 @@ def _normalise_code(code: str) -> str:
     return code.replace(" ", "").replace("-", "").upper()
 
 
-def _farm(row) -> Farm:
-    return Farm(id=row.id, name=row.name, created_at=row.created_at)
+def _farm(row, access: str = "owner") -> Farm:
+    return Farm(id=row.id, name=row.name, created_at=row.created_at, latitude=row.latitude, longitude=row.longitude, access=access)
+
+
+def _member_of(principal: Principal):
+    return and_(farm_members.c.user_id == principal.user_id, farm_members.c.removed_at.is_(None))
 
 
 _DEVICE_SELECT = select(
@@ -101,16 +105,41 @@ class DeviceService:
         return _farm(row)
 
     async def list_farms(self, principal: Principal) -> list[Farm]:
+        """Farms the caller owns, then farms the caller operates (added by their owners)."""
         async with self._engine.connect() as conn:
-            rows = await conn.execute(select(farms).where(farms.c.owner_user_id == principal.user_id).order_by(farms.c.created_at))
-            return [_farm(r) for r in rows]
+            owned = await conn.execute(select(farms).where(farms.c.owner_user_id == principal.user_id).order_by(farms.c.created_at))
+            result = [_farm(r) for r in owned]
+            operated = await conn.execute(
+                select(farms).join(farm_members, farm_members.c.farm_id == farms.c.id).where(_member_of(principal)).order_by(farms.c.created_at)
+            )
+            return result + [_farm(r, "operator") for r in operated]
 
     async def get_farm(self, principal: Principal, farm_id: uuid.UUID) -> Farm:
+        """The caller's own farm, or a farm the caller operates. Anything else is 404."""
         async with self._engine.connect() as conn:
-            row = (await conn.execute(select(farms).where(and_(farms.c.id == farm_id, farms.c.owner_user_id == principal.user_id)))).first()
-        if row is None:
+            row = (await conn.execute(select(farms).where(farms.c.id == farm_id))).first()
+            if row is not None and row.owner_user_id == principal.user_id:
+                return _farm(row)
+            if row is not None:
+                member = (await conn.execute(select(farm_members.c.farm_id).where(and_(farm_members.c.farm_id == farm_id, _member_of(principal))))).first()
+                if member is not None:
+                    return _farm(row, "operator")
+        raise not_found("Farm")
+
+    async def _owned_farm(self, principal: Principal, farm_id: uuid.UUID) -> Farm:
+        farm = await self.get_farm(principal, farm_id)
+        if farm.access != "owner":
             raise not_found("Farm")
-        return _farm(row)
+        return farm
+
+    async def update_farm(self, principal: Principal, farm_id: uuid.UUID, body: FarmUpdate) -> Farm:
+        if (await self.get_farm(principal, farm_id)).access != "owner":
+            raise forbidden("Only the farm's owner can change it.")
+        values = {k: getattr(body, k) for k in ("name", "latitude", "longitude") if k in body.model_fields_set}
+        async with self._engine.begin() as conn:
+            await conn.execute(update(farms).where(farms.c.id == farm_id).values(**values))
+        await audit(self._engine, "farm.update", "success", actor=principal.user_id, target=str(farm_id), details={"fields": sorted(values)})
+        return await self.get_farm(principal, farm_id)
 
     # ------------------------------------------------------------------ devices (farmer)
     async def list_devices(self, principal: Principal, farm_id: uuid.UUID | None = None) -> list[Device]:
@@ -130,7 +159,7 @@ class DeviceService:
             self.claim_limiter.hit(f"user:{principal.user_id}")
         except RateLimited as exc:
             raise ApiError(429, "rate_limited", "Too many claim attempts. Try again later.", headers={"Retry-After": str(exc.retry_after_s)}) from None
-        await self.get_farm(principal, farm_id)  # 404 if not the caller's farm
+        await self._owned_farm(principal, farm_id)  # 404 unless the caller OWNS the farm (operators cannot attach devices)
         now = self._clock()
         async with self._engine.begin() as conn:
             row = (await conn.execute(select(devices).where(devices.c.device_id == device_id).with_for_update())).first()

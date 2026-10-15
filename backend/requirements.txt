@@ -13,3 +13,5 @@ paho-mqtt==2.1.0
 # Phase 2: signed access tokens (HS256) and the WebSocket protocol implementation for uvicorn.
 PyJWT==2.15.1
 websockets==17.1
+# Phase II farm rules: the threshold files (bollbot/config/*.yaml) are read as published.
+PyYAML==6.0.2

@@ -106,19 +106,20 @@ class SimulatedDevice:
             {"maturity": maturity, "picked": picked, "moistureRhPct": round(self._rng.uniform(30, 70), 1)},
         )
 
-    def scan(self, row: int = 1, segment: int = 1) -> OutgoingMessage:
-        # Phase II: the cart closes one row segment and reports per-class counts.
-        # Illustrative numbers only; a READY-looking segment about one time in three.
+    def scan(self, row: int = 1, segment: int = 1, counts: dict[str, int] | None = None) -> OutgoingMessage:
+        # Phase II: the cart closes one row segment and reports per-class counts (contract
+        # camelCase keys). Random illustrative numbers unless ``counts`` is given (tests).
         closed = self._rng.randint(10, 50)
         opened = self._rng.randint(0, closed)
         started = self._clock().timestamp() - self._rng.uniform(60, 180)
-        counts = {
-            "bollClosed": closed,
-            "bollCracking": self._rng.randint(0, 10),
-            "bollOpen": opened,
-            "bollBored": self._rng.randint(0, 2),
-            "rosetteFlower": self._rng.randint(0, 2),
-        }
+        if counts is None:
+            counts = {
+                "bollClosed": closed,
+                "bollCracking": self._rng.randint(0, 10),
+                "bollOpen": opened,
+                "bollBored": self._rng.randint(0, 2),
+                "rosetteFlower": self._rng.randint(0, 2),
+            }
         return self._message(
             MessageKind.SCAN,
             {

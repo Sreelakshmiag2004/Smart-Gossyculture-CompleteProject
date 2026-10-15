@@ -26,6 +26,8 @@ from gossy.db.engine import create_engine
 from gossy.db.migrations import expected_head
 from gossy.devices.routes import router as devices_router
 from gossy.devices.service import DeviceService
+from gossy.farmrules.routes import router as farmrules_router
+from gossy.farmrules.store import FarmRulesStore
 from gossy.health.checks import CheckResult, ReadinessCheck, database_check, migrations_check, named, timescaledb_check
 from gossy.health.metrics import Metric, database_up
 from gossy.health.metrics import router as metrics_router
@@ -51,7 +53,13 @@ Development/staging use allow-listed test numbers with a fixed code; no SMS is s
 delivery is not implemented (provider undecided).
 
 **Authorization.** Farmers see only devices attached to farms they own; other resources answer 404.
-Admin endpoints (`/api/v1/admin/...`) handle device provisioning only.
+A farm's owner can add operators, who read the farm's advice and enter trap, scouting and
+confirmation data, but cannot see its devices. Admin endpoints (`/api/v1/admin/...`) handle
+device provisioning only.
+
+**Farm rules.** Advice (harvest readiness per row segment, picking window, rain alert, pest
+thresholds with spray blocking) is computed from cart scans and entered data by the published
+rules in `bollbot/config`; see `docs/farm-rules.md`. Advice never triggers a device.
 
 **Errors.** Every error body is `{"error": {"code", "message", "requestId", "details?"}}`.
 
@@ -70,6 +78,7 @@ TAGS = [
     {"name": "telemetry", "description": "Persisted telemetry and device events"},
     {"name": "detections", "description": "Pest/disease detections reported by the upstream device detector"},
     {"name": "alerts", "description": "Alerts derived from device messages"},
+    {"name": "farm-rules", "description": "Advice from the farm rules (harvest readiness, picking window, rain alert, pest thresholds) and the data they use: trap counts, scouting counts, checked detections"},
     {"name": "admin", "description": "Device provisioning (admin role)"},
     {"name": "health", "description": "Liveness and readiness probes"},
 ]
@@ -119,6 +128,7 @@ def create_app(
             telemetry_interval_s=api.telemetry_interval_s, telemetry_stale_after_s=api.telemetry_stale_after_s,
         )
         app.state.hub = hub
+        app.state.farmrules = FarmRulesStore(engine)
 
         async def listener_check() -> CheckResult:
             return CheckResult("event_listener", listener.connected, "listening" if listener.connected else "not connected")
@@ -166,6 +176,6 @@ def create_app(
     http_counters: dict[str, int] = {}
     app.add_middleware(BodySizeLimitMiddleware, max_bytes=api.max_request_body_bytes)
     app.add_middleware(RequestContextMiddleware, counters=http_counters)
-    for router in (health_router, metrics_router, auth_router, devices_router, telemetry_router, alerts_router, ws_router):
+    for router in (health_router, metrics_router, auth_router, devices_router, telemetry_router, alerts_router, farmrules_router, ws_router):
         app.include_router(router)
     return app

@@ -41,6 +41,8 @@ jobs:
           python-version: "3.12"
       - name: Install
         run: pip install -r requirements-dev.txt -c constraints.txt
+      - name: Farm rules are an exact copy of bollbot/ (run backend/scripts/sync_farm_rules.sh after changing them)
+        run: bash scripts/sync_farm_rules.sh --check
       - name: OpenAPI file up to date
         run: |
           python -m gossy.api.export_openapi > /tmp/openapi.json

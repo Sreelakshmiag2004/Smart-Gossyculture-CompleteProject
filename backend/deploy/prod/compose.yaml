@@ -273,3 +273,19 @@ services:
     deploy:
       resources:
         limits: {cpus: "0.50", memory: 384M}
+
+  farmrules:
+    <<: *app
+    # Farm rules worker (no published port, no MQTT): recompute every farm each minute, refresh
+    # the Open-Meteo forecast hourly (outbound HTTPS to api.open-meteo.com).
+    command: ["python", "-m", "gossy.farmrules"]
+    environment:
+      <<: *app-env
+      GOSSY_DB_USER: gossy_app
+      GOSSY_DB_PASSWORD_FILE: /run/gossy-secrets/db/app.password
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    deploy:
+      resources:
+        limits: {cpus: "0.25", memory: 256M}

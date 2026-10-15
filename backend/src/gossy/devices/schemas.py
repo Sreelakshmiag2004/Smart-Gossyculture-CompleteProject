@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from typing import Annotated, Literal
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from gossy.auth.schemas import ApiModel
 from gossy.contracts.topics import DEVICE_ID_PATTERN
@@ -21,6 +21,28 @@ class Farm(ApiModel):
     id: uuid.UUID
     name: str
     created_at: datetime
+    latitude: float | None = Field(default=None, description="Farm location for the rain forecast (null until the owner sets it)")
+    longitude: float | None = None
+    access: Literal["owner", "operator"] = Field(default="owner", description="owner: the caller owns the farm; operator: the owner added the caller to enter data")
+
+
+class FarmUpdate(ApiModel):
+    """Only the fields sent are changed. Location: send both, or both null to clear it."""
+
+    name: Annotated[str, Field(min_length=1, max_length=80)] | None = None
+    latitude: Annotated[float, Field(ge=-90, le=90)] | None = None
+    longitude: Annotated[float, Field(ge=-180, le=180)] | None = None
+
+    @model_validator(mode="after")
+    def _location_pair(self) -> FarmUpdate:
+        sent = {"latitude", "longitude"} & self.model_fields_set
+        if sent and (len(sent) != 2 or (self.latitude is None) != (self.longitude is None)):
+            raise ValueError("send latitude and longitude together (both null clears the location)")
+        if "name" in self.model_fields_set and self.name is None:
+            raise ValueError("name cannot be null")
+        if not self.model_fields_set:
+            raise ValueError("nothing to change")
+        return self
 
 
 class DeviceStatus(ApiModel):

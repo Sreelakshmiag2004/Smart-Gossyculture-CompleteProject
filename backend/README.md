@@ -38,6 +38,7 @@ chosen (U-4). The admin role can only be granted with the operator CLI:
 | `src/gossy/auth/`, `src/gossy/security/` | OTP sign-in, sessions, JWT access + rotating refresh tokens, rate limits |
 | `src/gossy/devices/` | Farms, device registry (provision → claim → active → decommissioned), access rule |
 | `src/gossy/telemetry/`, `src/gossy/alerts/` | Telemetry / events / detections queries; alert rules and endpoints |
+| `src/gossy/farmrules/` | Phase II farm rules: advice from cart scans, trap/scouting counts and the rain forecast; operators; worker (`python -m gossy.farmrules`). Rules copied from `bollbot/` - see `docs/farm-rules.md` |
 | `src/gossy/realtime/` | WebSocket endpoint, event hub, PostgreSQL LISTEN loop |
 | `src/gossy/audit.py`, `src/gossy/manage.py` | Append-only audit log; operator CLI (grant admin) |
 | `src/gossy/ingest/` | Validation → idempotent persistence; reconnecting MQTT consumer; ingest service app |
@@ -56,7 +57,8 @@ Requires Docker Desktop. From this `backend/` directory:
 #    development-only secrets into the gossy-dev_gossy-secrets volume
 docker compose -f deploy/dev/compose.yaml --profile setup run --rm bootstrap
 
-# 2. start database, broker, migrations, api, ingest
+# 2. start database, broker, migrations, api, ingest, farm-rules worker
+#    (the worker fetches the rain forecast from Open-Meteo; offline: GOSSY_DEV_FARMRULES_WEATHER=false)
 docker compose -f deploy/dev/compose.yaml up -d --build
 
 # 3. optional: synthetic device publishing every 5 s

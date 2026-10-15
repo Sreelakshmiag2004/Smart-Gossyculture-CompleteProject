@@ -1,0 +1,29 @@
+# BollBot Scout - decision thresholds.
+# Values marked (A) are assumptions to be tuned in experiment E4
+# (picking window vs oven-dry moisture). Edit here, never in code.
+
+readiness:
+  ready_min: 0.40        # (A) R >= this -> READY
+  building_min: 0.20     # (A) R >= this -> BUILDING, else NOT_READY
+
+picking_window:
+  # Limits are the largest/smallest ALLOWED values: RH 75 % and 2.0 mm rain
+  # still pass; 75.1 % and 2.1 mm do not. earliest_hour is IST local time.
+  earliest_hour: 10      # (A) local hour after which dew has usually lifted
+  min_dewpoint_depression_c: 4.0   # (A) T - Td
+  max_rh_pct: 75.0       # (A)
+  max_rain_last_24h_mm: 2.0        # (A)
+
+rain_alert:
+  min_rain_prob_pct: 60  # (A) forecast probability within the window
+  window_hours: 48
+  min_segment_readiness: 0.30      # (A) any segment at/above this triggers
+
+spray_block:
+  # Spray advisories are blocked while a farm has segments close to picking,
+  # so spraying and picking never overlap (pre-harvest interval).
+  min_segment_readiness: 0.30
+
+moisture_classes:        # CCI-style classes (verify current CCI norms)
+  safe_max_pct: 8.0
+  dry_and_pick_max_pct: 12.0
