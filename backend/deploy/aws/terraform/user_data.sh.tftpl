@@ -1,0 +1,66 @@
+#!/bin/bash
+# Smart Gossyculture host bootstrap (Amazon Linux 2023). Rendered by Terraform; contains NO
+# secrets. Output: /var/log/gossy/bootstrap.log (also in the EC2 console output).
+set -euo pipefail
+mkdir -p /var/log/gossy
+exec > >(tee -a /var/log/gossy/bootstrap.log) 2>&1
+echo "bootstrap start $(date -u +%FT%TZ)"
+
+# --- packages: Docker engine, CloudWatch agent (SSM agent and chrony are in the AMI)
+dnf -y install docker amazon-cloudwatch-agent awscli-2 python3 tar gzip
+install -d -m 0755 /usr/local/lib/docker/cli-plugins
+curl -fsSL -o /tmp/docker-compose "https://github.com/docker/compose/releases/download/${docker_compose_version}/docker-compose-linux-x86_64"
+echo "${docker_compose_sha256}  /tmp/docker-compose" | sha256sum -c -
+install -m 0755 /tmp/docker-compose /usr/local/lib/docker/cli-plugins/docker-compose
+
+# --- Docker daemon: local unix socket only (no TCP API), containers keep running across
+# daemon restarts, no privilege escalation by default.
+install -d -m 0755 /etc/docker
+cat > /etc/docker/daemon.json <<'JSON'
+{
+  "live-restore": true,
+  "no-new-privileges": true,
+  "userland-proxy": false,
+  "log-driver": "local"
+}
+JSON
+systemctl enable --now docker
+
+# --- no SSH: administration is through SSM Session Manager (port 22 is also closed in the SG)
+systemctl disable --now sshd || true
+
+# --- time: Amazon Time Sync Service (169.254.169.123) via chrony (AL2023 default); verify
+systemctl enable --now chronyd
+chronyc -n sources | tee /var/log/gossy/chrony-sources.txt
+grep -q '169.254.169.123' /var/log/gossy/chrony-sources.txt || echo "WARNING: Amazon Time Sync source not listed"
+
+# --- encrypted data volume -> /srv/gossy (found by EBS volume id, not by device name)
+VOL_ID="${data_volume_id}"
+DEV="/dev/disk/by-id/nvme-Amazon_Elastic_Block_Store_$(echo "$VOL_ID" | tr -d '-')"
+for _ in $(seq 1 60); do [ -e "$DEV" ] && break; sleep 5; done
+[ -e "$DEV" ] || { echo "data volume $VOL_ID not attached"; exit 1; }
+if ! blkid "$DEV" >/dev/null 2>&1; then
+  mkfs.xfs -L gossy-data "$DEV"
+fi
+install -d -m 0755 /srv/gossy
+grep -q ' /srv/gossy ' /etc/fstab || echo "LABEL=gossy-data /srv/gossy xfs defaults,nofail,noatime 0 2" >> /etc/fstab
+mount -a
+
+# --- non-secret configuration (secrets are rendered from Secrets Manager into tmpfs later)
+# Source of truth: SSM parameter ${host_env_parameter} (Terraform). bin/render-config.sh
+# refreshes this file from it at every deployment; this is only the first copy.
+install -d -m 0750 /etc/gossy
+aws ssm get-parameter --region "${region}" --name "${host_env_parameter}" --query Parameter.Value --output text > /etc/gossy/gossy.env
+grep -q '^GOSSY_ENVIRONMENT=' /etc/gossy/gossy.env || { echo "host settings parameter ${host_env_parameter} is empty or unreadable"; exit 1; }
+chmod 0640 /etc/gossy/gossy.env
+
+# --- deploy bundle (compose file, configs, scripts, systemd units, CloudWatch agent config)
+if [ -n "${deploy_bundle_key}" ]; then
+  aws s3 cp --region "${region}" "s3://${artifacts_bucket}/${deploy_bundle_key}" /tmp/gossy-bundle.tar.gz
+  rm -rf /tmp/gossy-bundle && mkdir -p /tmp/gossy-bundle
+  tar -xzf /tmp/gossy-bundle.tar.gz -C /tmp/gossy-bundle
+  bash /tmp/gossy-bundle/install.sh
+else
+  echo "no deploy bundle configured - install later via SSM (see docs/deployment.md)"
+fi
+echo "bootstrap done $(date -u +%FT%TZ); next: point DNS at the Elastic IP, then /opt/gossy/bin/deploy.sh <tag> via SSM"

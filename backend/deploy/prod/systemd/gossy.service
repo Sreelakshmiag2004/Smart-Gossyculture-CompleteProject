@@ -1,0 +1,17 @@
+[Unit]
+Description=Smart Gossyculture stack (Docker Compose)
+Requires=docker.service gossy-secrets.service
+After=docker.service gossy-secrets.service network-online.target srv-gossy.mount
+Wants=network-online.target
+RequiresMountsFor=/srv/gossy
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+EnvironmentFile=/etc/gossy/gossy.env
+ExecStart=/usr/bin/docker compose --env-file /etc/gossy/gossy.env --env-file /etc/gossy/release.env -f /opt/gossy/compose.yaml up -d --wait
+ExecStop=/usr/bin/docker compose --env-file /etc/gossy/gossy.env --env-file /etc/gossy/release.env -f /opt/gossy/compose.yaml stop
+TimeoutStartSec=600
+
+[Install]
+WantedBy=multi-user.target

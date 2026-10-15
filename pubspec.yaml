@@ -1,0 +1,57 @@
+name: smart_gossy_culture_app
+description: A Flutter app for cotton farming logs and analytics.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  fl_chart: ^0.66.0
+  excel: ^4.0.0
+  path_provider: ^2.1.1
+  shared_preferences: ^2.2.2
+  share_plus: ^10.0.0
+  permission_handler: ^11.3.0
+  device_info_plus: ^10.0.0
+  open_file: ^3.3.2
+  flutter_file_dialog: ^3.0.2
+  country_code_picker: ^3.0.0
+  # Phase 1 integration foundation (approved plan; not yet used by Dart code):
+  dio: ^5.11.1
+  web_socket_channel: ^3.0.3
+  flutter_secure_storage: ^10.3.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_native_splash: ^2.3.7
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/logo.png"
+  min_sdk_android: 21
+
+flutter_native_splash:
+  color: "#5FA62C"
+  # image: assets/splash_logo_text.png (Removed to prevent static-to-animation flash)
+  # branding: assets/splash_logo_text.png
+  # android_12:
+  #   image: assets/splash_logo_text.png
+  #   color: "#5FA62C"
+  #   background_image: assets/splash_gradient_bg.png
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/Moisture_level.png
+    - assets/Power.png
+    - assets/MLPhoto.png
+    - assets/logo.png
+  
+   
+    # Add other assets here as needed

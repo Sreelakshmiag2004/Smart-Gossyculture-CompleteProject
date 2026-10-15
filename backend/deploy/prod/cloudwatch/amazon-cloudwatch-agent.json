@@ -1,0 +1,75 @@
+{
+  "agent": {
+    "metrics_collection_interval": 60,
+    "run_as_user": "root"
+  },
+  "metrics": {
+    "namespace": "Gossy/Host",
+    "append_dimensions": {
+      "InstanceId": "${aws:InstanceId}"
+    },
+    "aggregation_dimensions": [["InstanceId"], ["InstanceId", "path"]],
+    "metrics_collected": {
+      "cpu": {"measurement": ["cpu_usage_active", "cpu_usage_iowait"], "totalcpu": true},
+      "mem": {"measurement": ["mem_used_percent"]},
+      "swap": {"measurement": ["swap_used_percent"]},
+      "disk": {"measurement": ["used_percent"], "resources": ["/", "/srv/gossy"], "drop_device": true}
+    }
+  },
+  "logs": {
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+          {"file_path": "/var/log/gossy/ops.log", "log_group_name": "__LOG_GROUP__", "log_stream_name": "ops-{instance_id}", "retention_in_days": -1}
+        ]
+      }
+    },
+    "metrics_collected": {
+      "prometheus": {
+        "log_group_name": "__LOG_GROUP__-prometheus",
+        "prometheus_config_path": "/opt/gossy/cloudwatch/prometheus.yaml",
+        "emf_processor": {
+          "metric_declaration_dedup": true,
+          "metric_namespace": "Gossy/App",
+          "metric_declaration": [
+            {
+              "source_labels": ["job"],
+              "label_matcher": "^gossy-ingest$",
+              "dimensions": [["Environment", "condition"]],
+              "metric_selectors": ["^gossy_ingest_condition$"]
+            },
+            {
+              "source_labels": ["job"],
+              "label_matcher": "^gossy-ingest$",
+              "dimensions": [["Environment"]],
+              "metric_selectors": [
+                "^gossy_ingest_(received|ingested|duplicates|rejected|dead_letters|transient_retries|blocked|consumer_errors)_total$",
+                "^gossy_ingest_mqtt_(connected|ack_failures_total)$",
+                "^gossy_ingest_retry_duration_seconds$",
+                "^gossy_ingest_last_message_age_seconds$"
+              ]
+            },
+            {
+              "source_labels": ["job"],
+              "label_matcher": "^gossy-api$",
+              "dimensions": [["Environment"]],
+              "metric_selectors": ["^gossy_api_(unhandled_errors_total|websocket_subscribers|event_listener_connected)$"]
+            },
+            {
+              "source_labels": ["job"],
+              "label_matcher": "^gossy-(api|ingest)$",
+              "dimensions": [["Environment", "job"]],
+              "metric_selectors": ["^gossy_database_up$"]
+            },
+            {
+              "source_labels": ["job"],
+              "label_matcher": "^gossy-api$",
+              "dimensions": [["Environment", "status"]],
+              "metric_selectors": ["^gossy_api_http_requests_total$"]
+            }
+          ]
+        }
+      }
+    }
+  }
+}

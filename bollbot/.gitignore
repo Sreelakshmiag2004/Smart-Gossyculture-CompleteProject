@@ -1,0 +1,12 @@
+# runtime data and secrets: never commit
+data/
+secrets/
+models/
+runs/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+firmware/esp32/bollbot_fw/secrets.h
+firmware/esp32/test/build/
+cloud/functions/bollbot/
+cloud/.firebase/

@@ -1,0 +1,7 @@
+# Development and test dependencies. Never installed in the runtime image target.
+-r requirements.txt
+pytest==9.1.1
+pytest-asyncio==1.4.0
+httpx==0.28.1
+# Used only by gossy_devtools.bootstrap to create the development-only CA and broker certificate.
+cryptography==50.0.1

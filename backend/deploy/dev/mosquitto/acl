@@ -1,0 +1,27 @@
+# Mosquitto ACL - contract bollbot/v1 (telemetry/event ingestion only).
+#
+# v1 security boundary (Phase 0 ADR-10, Phase 1 rule): the backend MUST NOT send operational
+# commands to devices. The ingest service account therefore has READ access only, and there
+# are no command/config topics at all. Devices have WRITE access to their own topics only and
+# no read access (they cannot receive anything from the cloud).
+
+# Backend ingest service account (read-only).
+user svc-ingest
+topic read bollbot/v1/+/telemetry
+topic read bollbot/v1/+/event/+
+topic read bollbot/v1/+/status
+
+# Broker healthcheck account: may only subscribe to a non-device health topic.
+user svc-health
+topic read gossy/health
+
+# Devices: the broker username is the deviceId (%u). Write-only, own topics only.
+# Note: patterns also apply to service accounts, which only yields topics under their own
+# "svc-*" name; the ingest validator rejects "svc-*" device IDs.
+pattern write bollbot/v1/%u/telemetry
+pattern write bollbot/v1/%u/event/pest
+pattern write bollbot/v1/%u/event/spray
+pattern write bollbot/v1/%u/event/harvest
+pattern write bollbot/v1/%u/event/scan
+pattern write bollbot/v1/%u/event/pick
+pattern write bollbot/v1/%u/status

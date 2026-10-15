@@ -1,0 +1,224 @@
+# Smart Gossyculture - LOCAL DEVELOPMENT stack. Not a production deployment.
+#
+#   cd backend
+#   docker compose -f deploy/dev/compose.yaml --profile setup run --rm bootstrap   # once: dev secrets
+#   docker compose -f deploy/dev/compose.yaml up -d --build                         # db, broker, api, ingest
+#   docker compose -f deploy/dev/compose.yaml --profile simulator up -d simulator   # synthetic device
+#   docker compose -f deploy/dev/compose.yaml --profile test run --rm tests         # integration tests
+#
+# Published ports bind to 127.0.0.1 only: api 8000, ingest health 8001, broker 18883 (TLS).
+# The database is not published at all.
+name: gossy-dev
+
+x-backend-image: &backend-image
+  image: gossy-backend:dev
+  build:
+    context: ../..
+    dockerfile: Dockerfile
+    target: dev
+
+x-backend-common-env: &backend-common-env
+  GOSSY_ENVIRONMENT: development
+  GOSSY_LOG_LEVEL: INFO
+  GOSSY_LOG_JSON: "true"
+  GOSSY_DB_HOST: timescaledb
+  GOSSY_DB_PORT: "5432"
+  GOSSY_DB_NAME: gossy
+
+x-secrets-ro: &secrets-ro gossy-secrets:/run/gossy-secrets:ro
+
+# Phone-OTP authentication, DEVELOPMENT settings. Test mode = allow-listed test numbers in the
+# unassigned +999 range with a fixed code from the secrets volume; no SMS is ever sent.
+# Rate limits are relaxed so repeated local test runs do not trip them (limits are tested
+# in-process with strict values).
+x-auth-env: &auth-env
+  GOSSY_AUTH_JWT_SIGNING_KEY_FILE: /run/gossy-secrets/auth/jwt-signing.key
+  GOSSY_AUTH_OTP_HMAC_KEY_FILE: /run/gossy-secrets/auth/otp-hmac.key
+  GOSSY_AUTH_TEST_MODE: "true"
+  GOSSY_AUTH_TEST_PHONE_NUMBERS: "+99900000001,+99900000002,+99900000003,+99900000009"
+  GOSSY_AUTH_TEST_OTP_CODE_FILE: /run/gossy-secrets/auth/test-otp.code
+  GOSSY_AUTH_OTP_REQUESTS_PER_PHONE: "500"
+  GOSSY_AUTH_OTP_REQUESTS_PER_IP: "2000"
+  GOSSY_AUTH_OTP_VERIFICATIONS_PER_IP: "2000"
+
+services:
+  bootstrap:
+    <<: *backend-image
+    profiles: ["setup"]
+    user: "0:0"
+    network_mode: none
+    command: ["python", "-m", "gossy_devtools.bootstrap", "--secrets-dir", "/run/gossy-secrets"]
+    volumes:
+      - gossy-secrets:/run/gossy-secrets
+
+  timescaledb:
+    image: timescale/timescaledb:2.30.2-pg17
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD_FILE: /run/gossy-secrets/db/postgres.password
+      TIMESCALEDB_TELEMETRY: "off"
+    volumes:
+      - *secrets-ro
+      - gossy-pgdata:/var/lib/postgresql/data
+      - ./postgres/10-init-roles.sh:/docker-entrypoint-initdb.d/10-init-roles.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d gossy"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+  mosquitto-init:
+    image: eclipse-mosquitto:2.0.22
+    user: "0:0"
+    entrypoint: ["/bin/sh", "/init/init-broker.sh"]
+    volumes:
+      - *secrets-ro
+      - gossy-broker-generated:/mosquitto/generated
+      - ./mosquitto/init-broker.sh:/init/init-broker.sh:ro
+    restart: "no"
+
+  mosquitto:
+    image: eclipse-mosquitto:2.0.22
+    depends_on:
+      mosquitto-init:
+        condition: service_completed_successfully
+    ports:
+      # Inside the Compose network the broker is mosquitto:8883. On the host it is published on
+      # 18883 by default because 8883 is often reserved on Windows (Hyper-V/system exclusions).
+      - "127.0.0.1:${GOSSY_DEV_MQTT_HOST_PORT:-18883}:8883"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./mosquitto/acl:/mosquitto/config/acl:ro
+      - gossy-broker-generated:/mosquitto/generated:ro
+      - gossy-broker-data:/mosquitto/data
+    healthcheck:
+      # Real check: TLS handshake with certificate verification + authentication + SUBACK.
+      test: ["CMD-SHELL", "mosquitto_sub -h localhost -p 8883 --cafile /mosquitto/generated/ca.crt -u svc-health -P \"$$(cat /mosquitto/generated/health.password)\" -V mqttv5 -t gossy/health -E -W 5"]
+      interval: 10s
+      timeout: 8s
+      retries: 12
+    restart: unless-stopped
+
+  migrate:
+    <<: *backend-image
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      <<: *backend-common-env
+      GOSSY_DB_USER: gossy_owner
+      GOSSY_DB_PASSWORD_FILE: /run/gossy-secrets/db/owner.password
+    volumes:
+      - *secrets-ro
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    <<: *backend-image
+    command: ["uvicorn", "--factory", "gossy.api.app:create_app", "--host", "0.0.0.0", "--port", "8000", "--no-access-log"]
+    environment:
+      <<: [*backend-common-env, *auth-env]
+      GOSSY_DB_USER: gossy_app
+      GOSSY_DB_PASSWORD_FILE: /run/gossy-secrets/db/app.password
+      GOSSY_API_DOCS_ENABLED: "true"
+      # Development only: relaxed claim limit (repeated test runs) and short WebSocket
+      # heartbeat/session re-check intervals so the integration tests can observe them.
+      GOSSY_API_CLAIM_ATTEMPTS_PER_USER: "2000"
+      GOSSY_API_WS_HEARTBEAT_S: "3"
+      GOSSY_API_WS_REFRESH_S: "3"
+    volumes:
+      - *secrets-ro
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=2).status == 200 else 1)"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  ingest:
+    <<: *backend-image
+    command: ["uvicorn", "--factory", "gossy.ingest.app:create_app", "--host", "0.0.0.0", "--port", "8001", "--no-access-log"]
+    environment:
+      <<: *backend-common-env
+      GOSSY_DB_USER: gossy_app
+      GOSSY_DB_PASSWORD_FILE: /run/gossy-secrets/db/app.password
+      GOSSY_MQTT_HOST: mosquitto
+      GOSSY_MQTT_PORT: "8883"
+      GOSSY_MQTT_CLIENT_ID: svc-ingest-1
+      GOSSY_MQTT_USERNAME: svc-ingest
+      GOSSY_MQTT_PASSWORD_FILE: /run/gossy-secrets/mqtt/svc-ingest.password
+      GOSSY_MQTT_CA_FILE: /run/gossy-secrets/certs/ca.crt
+      # Development only: failure injection for the durability tests (refused in staging/prod).
+      GOSSY_INGEST_FAULT_INJECTION_DIR: /run/gossy-faults
+    volumes:
+      - *secrets-ro
+      - gossy-faults:/run/gossy-faults
+    ports:
+      - "127.0.0.1:8001:8001"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      mosquitto:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8001/healthz', timeout=2).status == 200 else 1)"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  simulator:
+    <<: *backend-image
+    profiles: ["simulator"]
+    # Development only: 5 s instead of the contract's 60 s reporting interval, so that the
+    # integration tests see live readings quickly. The freshness threshold stays 180 s.
+    command: ["python", "-m", "gossy_sim", "--interval", "5"]
+    environment:
+      GOSSY_SIM_DEVICE_ID: sim-0001
+      GOSSY_SIM_HOST: mosquitto
+      GOSSY_SIM_PORT: "8883"
+      GOSSY_SIM_CA_FILE: /run/gossy-secrets/certs/ca.crt
+      GOSSY_SIM_PASSWORD_FILE: /run/gossy-secrets/mqtt/sim-0001.password
+    volumes:
+      - *secrets-ro
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    restart: unless-stopped
+
+  tests:
+    <<: *backend-image
+    profiles: ["test"]
+    command: ["pytest", "-m", "integration", "-v"]
+    environment:
+      <<: [*backend-common-env, *auth-env]
+      GOSSY_DB_USER: gossy_app
+      GOSSY_DB_PASSWORD_FILE: /run/gossy-secrets/db/app.password
+      GOSSY_TEST_API_URL: http://api:8000
+      GOSSY_TEST_INGEST_URL: http://ingest:8001
+      GOSSY_TEST_MQTT_HOST: mosquitto
+      GOSSY_TEST_MQTT_PORT: "8883"
+      GOSSY_TEST_SECRETS_DIR: /run/gossy-secrets
+      GOSSY_TEST_WS_URL: ws://api:8000/api/v1/ws
+      GOSSY_TEST_FAULT_DIR: /run/gossy-faults
+    volumes:
+      - *secrets-ro
+      - gossy-faults:/run/gossy-faults
+    depends_on:
+      api:
+        condition: service_healthy
+      ingest:
+        condition: service_healthy
+
+volumes:
+  gossy-secrets:
+  gossy-pgdata:
+  gossy-broker-generated:
+  gossy-broker-data:
+  gossy-faults:

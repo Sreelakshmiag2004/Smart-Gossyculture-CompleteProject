@@ -1,0 +1,55 @@
+# Cart (edge) settings - spec Sections 5, 7, 11. One file per cart.
+cart_id: cart01               # = MQTT deviceId: lowercase, digits, '-', 3-64 chars
+farm: F01                     # changed per field session
+
+detector:
+  kind: ultralytics           # ultralytics (USB camera / video / NCNN on Pi) | oak (OAK-D Lite)
+  model: models/best_ncnn_model          # ultralytics: .pt or exported folder
+  oak_blob: models/best_openvino_2022.1_6shave.blob   # oak: from tools.luxonis.com
+  oak_config: models/best.json           # oak: decoding config from the same zip
+  imgsz: 416
+  conf: 0.35                  # detection confidence threshold
+  fps: 10                     # camera frame rate request
+
+markers:
+  csv: config/markers.csv     # tag_id -> farm, row, segment
+  dictionary: DICT_4X4_250    # printed tags must use the same dictionary
+  confirm_frames: 2           # a tag must be seen in this many consecutive frames
+
+counting:
+  min_hits: 3                 # a track must be seen in >= this many frames to count
+                              # (removes one-frame false detections)
+
+evidence:
+  dir: data/evidence
+  max_per_segment: 3          # photos saved per segment for the app
+  min_gap_s: 2.0              # seconds between saved photos
+
+store:
+  db: data/outbox.sqlite
+
+sync:                         # backend broker: MQTT 5 over TLS, contract bollbot/v1
+  broker_host: ""             # e.g. mqtt.your-domain.in (the backend's Mosquitto)
+  broker_port: 8883           # dev stack on a laptop: 18883
+  ca_file: secrets/broker-ca.crt          # CA that signed the broker certificate
+  password_file: secrets/device_password  # broker password for username = cart_id
+  min_backoff_s: 5
+  max_backoff_s: 300
+  batch: 20
+
+heartbeat_s: 60                # contract: one telemetry message every 60 s
+
+weather:
+  kind: bme280                # bme280 | none
+  i2c_bus: 1
+  address: 0x76               # 0x77 on some boards
+
+actuators:                    # Pi <-> ESP32 over MQTT (broker runs on the Pi)
+  mqtt_host: 127.0.0.1
+  mqtt_port: 1883
+  mqtt_user: pi
+  mqtt_password_file: secrets/mqtt_password   # one line, the password
+  flow_ml_per_s: 10.0         # (A) MEASURE: python -m bollbot.edge.actuators calibrate
+  spray_min_ms: 100           # must match firmware config.h
+  spray_max_ms: 5000
+  status_max_age_s: 3         # ESP32 status older than this = not ready

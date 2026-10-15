@@ -1,0 +1,14 @@
+== external port scan (rehearsal host 172.17.0.2 on docker network bridge)
+scanned 65535 TCP ports on 172.17.0.2 from a separate machine on the same network
+open: [443, 8883]
+  22    ssh              closed
+  80    http             closed
+  1883  mqtt plaintext   closed
+  2019  caddy admin      closed
+  2375  docker api       closed
+  2376  docker api tls   closed
+  5432  postgresql       closed
+  8000  api internal     closed
+  8001  ingest internal  closed
+  9001  mqtt websockets  closed
+scan exit=0

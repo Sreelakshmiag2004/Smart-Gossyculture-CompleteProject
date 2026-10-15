@@ -1,0 +1,10 @@
+# Raspberry Pi 4 (64-bit Raspberry Pi OS) - cart software
+pyyaml>=6.0
+opencv-python-headless>=4.8      # ArUco API (ArucoDetector) needs >= 4.7
+numpy
+paho-mqtt>=2.0                   # backend broker (TLS) and the Pi <-> ESP32 link
+smbus2                           # BME280 weather sensor
+RPi.bme280
+# Detector: install ONE of these
+ultralytics>=8.1                 # USB camera / NCNN on the Pi, video replay
+# depthai<3                      # OAK-D Lite (code targets the DepthAI v2 API)

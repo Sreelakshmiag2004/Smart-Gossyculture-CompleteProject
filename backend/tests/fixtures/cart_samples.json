@@ -1,0 +1,148 @@
+[
+ {
+  "source": "scan",
+  "topic": "bollbot/v1/cart01/event/scan",
+  "envelope": {
+   "schema": "bollbot.event.scan/1",
+   "msgId": "01M4XT0V2PZ3KRA32GPKXDE87K",
+   "deviceId": "cart01",
+   "seq": 0,
+   "ts": "2026-09-29T10:00:10+05:30",
+   "data": {
+    "row": 3,
+    "segment": 1,
+    "counts": {
+     "bollClosed": 1,
+     "bollOpen": 1
+    },
+    "startedAt": "2026-09-29T10:00:01+05:30",
+    "frames": 9,
+    "model": "yolov8n-416-v1",
+    "airTempC": 30.2,
+    "airRhPct": 100.0,
+    "dewpointC": 30.2
+   }
+  }
+ },
+ {
+  "source": "scan",
+  "topic": "bollbot/v1/cart01/event/scan",
+  "envelope": {
+   "schema": "bollbot.event.scan/1",
+   "msgId": "01M4XT0V2PNVE0AKXNX60JJPFX",
+   "deviceId": "cart01",
+   "seq": 1,
+   "ts": "2026-09-29T10:00:15+05:30",
+   "data": {
+    "row": 3,
+    "segment": 2,
+    "counts": {},
+    "startedAt": "2026-09-29T10:00:10+05:30",
+    "frames": 1,
+    "model": "yolov8n-416-v1",
+    "airTempC": 30.2,
+    "airRhPct": 100.0,
+    "dewpointC": 30.2
+   }
+  }
+ },
+ {
+  "source": "heartbeat",
+  "topic": "bollbot/v1/cart01/telemetry",
+  "envelope": {
+   "schema": "bollbot.telemetry/1",
+   "msgId": "01M4XT0V2QC71T9TZA02382559",
+   "deviceId": "cart01",
+   "seq": 2,
+   "ts": "2026-09-29T10:00:16+05:30",
+   "data": {
+    "fps": 4.2,
+    "outboxPending": 2
+   }
+  }
+ },
+ {
+  "source": "spray_event",
+  "topic": "bollbot/v1/cart01/event/spray",
+  "envelope": {
+   "schema": "bollbot.event.spray/1",
+   "msgId": "01M4XT0V2QZ0QEV95CAY7KJQHZ",
+   "deviceId": "cart01",
+   "seq": 3,
+   "ts": "2026-09-29T10:00:20+05:30",
+   "data": {
+    "durationMs": 900,
+    "completed": false,
+    "reason": "deadman_released",
+    "mlRequested": 27.0,
+    "mlDelivered": 9.0,
+    "purpose": "mealybug_spot",
+    "row": 3,
+    "segment": 1
+   }
+  }
+ },
+ {
+  "source": "spray_event",
+  "topic": "bollbot/v1/cart01/event/spray",
+  "envelope": {
+   "schema": "bollbot.event.spray/1",
+   "msgId": "01M4XT0V2Q3CC5K6C3F2YGQPH4",
+   "deviceId": "cart01",
+   "seq": 4,
+   "ts": "2026-09-29T10:00:20+05:30",
+   "data": {
+    "durationMs": 0,
+    "completed": false,
+    "reason": "estop",
+    "mlRequested": 10.0,
+    "purpose": "test"
+   }
+  }
+ },
+ {
+  "source": "pick_attempt",
+  "topic": "bollbot/v1/cart01/event/pick",
+  "envelope": {
+   "schema": "bollbot.event.pick/1",
+   "msgId": "01M4XT0V2QE5HR0NHE4AG50YP7",
+   "deviceId": "cart01",
+   "seq": 5,
+   "ts": "2026-09-29T10:00:30+05:30",
+   "data": {
+    "attemptId": "p-0a1b2c3d4e",
+    "result": "completed",
+    "row": 3,
+    "segment": 2,
+    "trackId": 7,
+    "confidence": 0.88,
+    "pitchDeg": 0.0,
+    "cycleS": 14.2,
+    "outcome": "picked",
+    "lintLeftG": 0.4,
+    "trashG": 0.1
+   }
+  }
+ },
+ {
+  "source": "pick_attempt",
+  "topic": "bollbot/v1/cart01/event/pick",
+  "envelope": {
+   "schema": "bollbot.event.pick/1",
+   "msgId": "01M4XT0V2QTV9DNBD0P8XZT9TN",
+   "deviceId": "cart01",
+   "seq": 6,
+   "ts": "2026-09-29T10:00:40+05:30",
+   "data": {
+    "attemptId": "p-0a1b2c3d4f",
+    "result": "unreachable",
+    "reason": "joint limits: elbow 187.8 not in [10.0, 170.0]",
+    "row": 3,
+    "segment": 2,
+    "trackId": 8,
+    "confidence": 0.71,
+    "cycleS": 0.0
+   }
+  }
+ }
+]

@@ -1,0 +1,6 @@
+# LOCAL REHEARSAL ONLY: a clean Linux "host" (Docker-in-Docker) that receives exactly the files
+# an EC2 host receives (deploy bundle, /etc/gossy/gossy.env, secrets JSON) and runs the same
+# bin/ scripts. Replaces what cannot exist without an AWS account: EC2, Secrets Manager, S3,
+# CloudWatch, a public domain. Never used for a real deployment.
+FROM docker:29-dind
+RUN apk add --no-cache bash python3 curl openssl coreutils findutils util-linux diffutils iproute2 tar gzip

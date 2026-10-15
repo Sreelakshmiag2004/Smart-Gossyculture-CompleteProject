@@ -1,0 +1,8 @@
+# Terraform working files and state are never committed (state lives in S3).
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+# Real backend configs (bucket names) - only the *.example files are committed.
+terraform/environments/*.backend.hcl

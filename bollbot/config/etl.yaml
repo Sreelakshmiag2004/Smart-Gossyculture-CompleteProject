@@ -1,0 +1,149 @@
+# Economic threshold levels (ETLs) for cotton pests.
+# Checked 2026-10-14. Sources, newest national guidance first:
+#   [AESA-2014] AESA based IPM package for cotton, DPPQ&S Faridabad for the
+#               National Centre for Integrated Pest Management (NCIPM), 2014
+#               https://niphm.gov.in/IPMPackages/Cotton.pdf
+#   [CICR-2019] ICAR-CICR, Pink bollworm management strategies, Kharif 2019
+#               https://icar.org.in/sites/default/files/Circulars/PBW-Management-strategies-2019.pdf
+#   [CICR-2011] Nagrare V.S. et al. (2011) Compendium of cotton mealybugs, ICAR-CICR Nagpur,
+#               Sec. 28 'Package of practices for managing mealybugs on cotton'
+#               https://static.vikaspedia.in/media/files_en/agriculture/crop-production/package-of-practices/mealybugs-compendium.pdf
+#   [TNAU]      TNAU Agritech portal, cotton insect pests (undated)
+# STATUS: adopted by the project team on 2026-10-14 as published in the sources
+# below (spotted bollworm: the newer national 5% value). Not yet confirmed by a
+# KVK / TNAU entomologist - report them as 'adopted from published guidance'.
+#
+# Rule types understood by core/etl.py:
+#   consecutive_nights : trap moths/trap/night vs threshold for N nights in a row
+#   camera_ratio       : sum(numerator classes) / sum(denominator classes) vs threshold
+#   mean_per_unit      : manual count / units observed (e.g. per leaf) vs threshold
+#   percent_units      : units meeting the condition / units observed * 100 vs threshold
+#   presence           : confirmed count vs threshold
+# strict: true  -> 'more than' (>), the wording used by [AESA-2014]; otherwise >=.
+# locate_class  -> segments of human-confirmed detections of that class are
+#                  attached to the advisory (WHERE, never WHETHER).
+#
+# action: ADVISORY | SPOT_TREAT | ALERT_ONLY
+
+pests:
+  pink_bollworm_trap:
+    name_en: Pink bollworm (pheromone trap)
+    name_ta: இளஞ்சிவப்பு காய்ப்புழு
+    type: consecutive_nights
+    source: trap
+    trap_prefix: PBW
+    threshold: 8          # [CICR-2019] 8 moths/trap for 3 consecutive days (>=);
+                          # [AESA-2014] says 'more than 8'. The newer, PBW-specific CICR wording is used.
+    nights: 3
+    action: ADVISORY
+    # [AESA-2014] trap density: 5 traps/ha in the South zone (about 2 per acre).
+
+  pink_bollworm_flowers:
+    name_en: Pink bollworm (rosette flowers)
+    name_ta: இளஞ்சிவப்பு காய்ப்புழு - ரோஜாப்பூ போன்ற பூக்கள்
+    type: camera_ratio
+    numerator: [rosette_flower]
+    denominator: [flower, rosette_flower]
+    threshold: 0.10       # [CICR-2019] 10% damaged (rosette) flowers; [AESA-2014] >10% infested flowers
+    min_denominator: 50
+    action: ADVISORY
+
+  pink_bollworm_green_bolls:
+    name_en: Pink bollworm (damaged green bolls)
+    name_ta: இளஞ்சிவப்பு காய்ப்புழு - சேதமடைந்த பச்சைக் காய்கள்
+    type: camera_ratio
+    numerator: [boll_bored]
+    denominator: [boll_closed, boll_cracking, boll_bored]   # green bolls only
+    threshold: 0.10       # [CICR-2019] 10% damaged green bolls (2 of 20 with larvae/exit holes)
+    min_denominator: 50
+    action: ADVISORY
+    # The camera sees only external exit holes, so it under-counts.
+    # Treat a camera crossing as 'cut open 20 green bolls and confirm'.
+
+  bollworm_larvae:
+    name_en: Spotted / American bollworm (larvae)
+    name_ta: புள்ளிக் காய்ப்புழு / அமெரிக்கக் காய்ப்புழு
+    type: mean_per_unit
+    source: manual
+    observation: bollworm_larvae_per_plant
+    threshold: 1          # [AESA-2014] 1 larva per plant (20 random plants)
+    min_units: 20
+    action: ADVISORY
+
+  bollworm_squares:
+    name_en: Spotted / American bollworm (damaged squares)
+    name_ta: புள்ளிக் காய்ப்புழு / அமெரிக்கக் காய்ப்புழு - சேதமடைந்த மொட்டுகள்
+    type: mean_per_unit
+    source: manual
+    observation: bollworm_damaged_squares_per_plant
+    threshold: 3          # [AESA-2014] more than 3 damaged squares per plant
+    strict: true
+    min_units: 20
+    action: ADVISORY
+    # [AESA-2014] also: >5% damaged fruiting bodies. [TNAU] gives 10% for
+    # spotted bollworm; the newer national 5% figure is preferred here.
+
+  whitefly:
+    name_en: Whitefly
+    name_ta: வெள்ளை ஈ
+    type: percent_units
+    source: manual
+    observation: whitefly_plants_over_10   # plants with >10 whiteflies on middle-canopy leaves
+    threshold: 50         # [AESA-2014] >10 whiteflies in middle region in >50% (two out of four) of plants
+    min_units: 20
+    action: ADVISORY
+
+  jassid:
+    name_en: Jassid (leafhopper)
+    name_ta: தத்துப்பூச்சி
+    type: mean_per_unit
+    source: manual
+    observation: jassid_per_leaf
+    threshold: 2          # [AESA-2014] more than 2 per leaf (+ crinkling/curling of lower leaves)
+    strict: true
+    min_units: 25         # 5 leaves x 5 plants
+    action: ADVISORY
+
+  thrips:
+    name_en: Thrips
+    name_ta: இலைப்பேன்
+    type: mean_per_unit
+    source: manual
+    observation: thrips_per_leaf
+    threshold: 10         # [AESA-2014] more than 10 thrips/leaf (5 terminal leaves per plant)
+    strict: true
+    min_units: 25
+    action: ADVISORY
+
+  aphid:
+    name_en: Aphid
+    name_ta: அசுவினி
+    type: percent_units
+    source: manual
+    observation: aphid_infested_plants
+    threshold: 10         # [AESA-2014] more than 10% affected plants
+    strict: true
+    min_units: 20
+    action: ADVISORY
+
+  mealybug:
+    name_en: Mealybug
+    name_ta: மாவுப்பூச்சி
+    type: percent_units
+    source: manual
+    observation: mealybug_grade2_plants   # grade 2 = at least one stem fully colonised
+    threshold: 10         # [CICR-2011] at least 10% of plants exceed grade 2,
+    min_units: 41         #             in more than 40 random plants per acre
+    locate_class: mealybug_colony
+    action: SPOT_TREAT    # [CICR-2011] never whole-field; neighbours first, then spot at stem base
+    # [AESA-2014] words this as '>40 plants per acre exceed grade-2'; the
+    # original CICR package (10% of >40 sampled) is used. Ask the KVK.
+
+  leaf_curl_virus:
+    name_en: Leaf curl virus
+    name_ta: இலைச்சுருள் நோய்
+    type: presence
+    source: manual
+    observation: leaf_curl_plants
+    threshold: 1          # no ETL exists: a virus has no chemical cure
+    action: ALERT_ONLY

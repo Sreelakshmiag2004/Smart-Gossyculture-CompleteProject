@@ -1,0 +1,21 @@
+14:35:09 D: stopping database for 90 s while publishing
+14:38:02 D: {"result": "PASS", "messages": 22, "missing": [], "effects": {"ledger": {"rows": 22, "expected": 22, "max_per_msg": 1}, "telemetry": {"rows": 20, "expected": 20, "max_per_msg": 1}, "events": {"rows": 2, "expected": 2, "max_per_msg": 1}, "alerts": {"rows": 2, "expected": 2, "max_per_msg": 1}, "dead_letters": {"rows": 0, "expected": 0, "max_per_msg": 0}}}
+14:38:02 E: restarting database in the middle of a 40-message stream
+14:38:29 E: {"result": "PASS", "messages": 42, "missing": [], "effects": {"ledger": {"rows": 42, "expected": 42, "max_per_msg": 1}, "telemetry": {"rows": 40, "expected": 40, "max_per_msg": 1}, "events": {"rows": 2, "expected": 2, "max_per_msg": 1}, "alerts": {"rows": 2, "expected": 2, "max_per_msg": 1}, "dead_letters": {"rows": 0, "expected": 0, "max_per_msg": 0}}}
+14:38:29 F: broker restart while ingest holds unacknowledged messages (database stopped)
+14:39:18 F: {"result": "PASS", "messages": 12, "missing": [], "effects": {"ledger": {"rows": 12, "expected": 12, "max_per_msg": 1}, "telemetry": {"rows": 10, "expected": 10, "max_per_msg": 1}, "events": {"rows": 2, "expected": 2, "max_per_msg": 1}, "alerts": {"rows": 2, "expected": 2, "max_per_msg": 1}, "dead_letters": {"rows": 0, "expected": 0, "max_per_msg": 0}}}
+14:39:18 G1: ingest stopped while publishing, then started
+14:39:54 G1: {"result": "PASS", "messages": 12, "missing": [], "effects": {"ledger": {"rows": 12, "expected": 12, "max_per_msg": 1}, "telemetry": {"rows": 10, "expected": 10, "max_per_msg": 1}, "events": {"rows": 2, "expected": 2, "max_per_msg": 1}, "alerts": {"rows": 2, "expected": 2, "max_per_msg": 1}, "dead_letters": {"rows": 0, "expected": 0, "max_per_msg": 0}}}
+14:39:54 G2: ingest SIGKILL while holding received-but-unstored messages (database paused)
+14:40:33 G2: {"result": "PASS", "messages": 12, "missing": [], "effects": {"ledger": {"rows": 12, "expected": 12, "max_per_msg": 1}, "telemetry": {"rows": 10, "expected": 10, "max_per_msg": 1}, "events": {"rows": 2, "expected": 2, "max_per_msg": 1}, "alerts": {"rows": 2, "expected": 2, "max_per_msg": 1}, "dead_letters": {"rows": 0, "expected": 0, "max_per_msg": 0}}}
+14:40:33 F2: broker SIGKILL while it holds queued messages (ingest stopped)
+14:41:26 F2: {"result": "PASS", "messages": 12, "missing": [], "effects": {"ledger": {"rows": 12, "expected": 12, "max_per_msg": 1}, "telemetry": {"rows": 10, "expected": 10, "max_per_msg": 1}, "events": {"rows": 2, "expected": 2, "max_per_msg": 1}, "alerts": {"rows": 2, "expected": 2, "max_per_msg": 1}, "dead_letters": {"rows": 0, "expected": 0, "max_per_msg": 0}}}
+14:41:26 durability_check finished: 0 failed
+== ingest counters after the scenarios
+{"status":"ready","checks":{"database":{"ok":true,"detail":null},"mqtt":{"ok":true,"detail":"connected"}},"info":{"ingest":{"received":13,"ingested":12,"duplicates":1,"rejected":0,"dead_lettered":0,"transient_retries":0,"blocked":0,"last_message_at":"2026-10-01T14:41:16.336657+00:00","retrying_since":null,"blocked_since":null,"last_dead_letter_at":null},"mqtt_connect_count":1,"mqtt_acked":13,"mqtt_ack_failures":0,"fault_injection":false,"condition":"ok"}}
+== restart counts
+/gossy-api-1 restarts=0 status=running
+/gossy-caddy-1 restarts=0 status=running
+/gossy-ingest-1 restarts=0 status=running
+/gossy-mosquitto-1 restarts=0 status=running
+/gossy-timescaledb-1 restarts=0 status=running

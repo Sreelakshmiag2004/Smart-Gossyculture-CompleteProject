@@ -1,0 +1,12 @@
+[Unit]
+Description=Smart Gossyculture database backup to S3
+Requires=gossy.service
+After=gossy.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/gossy/bin/backup.sh
+StandardOutput=append:/var/log/gossy/ops.log
+StandardError=append:/var/log/gossy/ops.log
+Nice=10
+IOSchedulingClass=idle

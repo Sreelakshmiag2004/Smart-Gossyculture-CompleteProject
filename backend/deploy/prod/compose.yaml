@@ -1,0 +1,275 @@
+# Smart Gossyculture - STAGING / PRODUCTION host stack (one EC2 instance, ap-south-1).
+#
+# Installed to /opt/gossy by the deploy bundle and run by systemd (gossy.service):
+#   docker compose --env-file /etc/gossy/gossy.env -f /opt/gossy/compose.yaml up -d
+#
+# Inputs (never in Git):
+#   /etc/gossy/gossy.env    non-secret settings rendered by Terraform user-data (see env/*.env.example)
+#   /run/gossy-secrets/     secrets rendered from AWS Secrets Manager into tmpfs (bin/render-secrets.sh)
+#   /srv/gossy/             encrypted EBS data volume: pgdata, broker data, TLS (Caddy) data
+#
+# Published ports: 443/tcp (Caddy: REST + WebSocket), 8883/tcp (Mosquitto MQTT/TLS).
+# Loopback only (CloudWatch agent scrapes metrics): 127.0.0.1:8000, 127.0.0.1:8001.
+# NOT published: PostgreSQL, Docker API, Caddy admin (disabled), Mosquitto $SYS / WebSockets.
+name: gossy
+
+x-logging: &logging
+  driver: awslogs
+  options:
+    awslogs-region: ${GOSSY_AWS_REGION:?}
+    awslogs-group: ${GOSSY_LOG_GROUP:?}
+    awslogs-create-group: "false"
+    tag: "{{.Name}}"
+    mode: non-blocking
+    max-buffer-size: 4m
+
+x-hardening: &hardening
+  restart: unless-stopped
+  security_opt: ["no-new-privileges:true"]
+  logging: *logging
+
+x-app: &app
+  <<: *hardening
+  image: ${GOSSY_IMAGE_REPO:?}:${GOSSY_IMAGE_TAG:?}
+  read_only: true
+  tmpfs: ["/tmp"]
+  cap_drop: ["ALL"]
+  volumes:
+    - /run/gossy-secrets/app:/run/gossy-secrets:ro
+
+x-app-env: &app-env
+  GOSSY_ENVIRONMENT: ${GOSSY_ENVIRONMENT:?}
+  GOSSY_LOG_LEVEL: INFO
+  GOSSY_LOG_JSON: "true"
+  GOSSY_DB_HOST: timescaledb
+  GOSSY_DB_PORT: "5432"
+  GOSSY_DB_NAME: gossy
+  GOSSY_IMAGE_TAG: ${GOSSY_IMAGE_TAG}
+  GOSSY_SECRETS_REVISION: ${GOSSY_SECRETS_REVISION:-}   # changes on rotation -> container recreated
+  GOSSY_API_PUBLIC_HOST: ${GOSSY_API_PUBLIC_HOST:?}
+  GOSSY_MQTT_PUBLIC_HOST: ${GOSSY_MQTT_PUBLIC_HOST:?}
+
+x-auth-env: &auth-env
+  GOSSY_AUTH_JWT_SIGNING_KEY_FILE: /run/gossy-secrets/auth/jwt-signing.key
+  GOSSY_AUTH_OTP_HMAC_KEY_FILE: /run/gossy-secrets/auth/otp-hmac.key
+  # Staging only (refused in production by the application): allow-listed +999 test numbers.
+  GOSSY_AUTH_TEST_MODE: ${GOSSY_AUTH_TEST_MODE:-false}
+  GOSSY_AUTH_TEST_PHONE_NUMBERS: ${GOSSY_AUTH_TEST_PHONE_NUMBERS:-}
+  GOSSY_AUTH_TEST_OTP_CODE_FILE: ${GOSSY_AUTH_TEST_OTP_CODE_FILE:-}
+  # Abuse limits (per API process, per 10 min). Defaults are the production values; staging may
+  # relax them for automated test runs.
+  GOSSY_AUTH_OTP_REQUESTS_PER_PHONE: ${GOSSY_AUTH_OTP_REQUESTS_PER_PHONE:-3}
+  GOSSY_AUTH_OTP_REQUESTS_PER_IP: ${GOSSY_AUTH_OTP_REQUESTS_PER_IP:-10}
+  GOSSY_AUTH_OTP_VERIFICATIONS_PER_IP: ${GOSSY_AUTH_OTP_VERIFICATIONS_PER_IP:-20}
+  GOSSY_API_CLAIM_ATTEMPTS_PER_USER: ${GOSSY_API_CLAIM_ATTEMPTS_PER_USER:-10}
+  GOSSY_API_WS_HEARTBEAT_S: ${GOSSY_API_WS_HEARTBEAT_S:-25}
+  GOSSY_API_WS_REFRESH_S: ${GOSSY_API_WS_REFRESH_S:-30}
+
+x-mqtt-env: &mqtt-env
+  # The broker is reached by its PUBLIC name (network alias below) so that hostname
+  # verification against the publicly trusted certificate succeeds inside the host too.
+  GOSSY_MQTT_HOST: ${GOSSY_MQTT_PUBLIC_HOST}
+  GOSSY_MQTT_PORT: "8883"
+  GOSSY_MQTT_CLIENT_ID: svc-ingest-1
+  GOSSY_MQTT_USERNAME: svc-ingest
+  GOSSY_MQTT_PASSWORD_FILE: /run/gossy-secrets/mqtt/svc-ingest.password
+  GOSSY_MQTT_CA_FILE: ${GOSSY_MQTT_CA_FILE:-/etc/ssl/certs/ca-certificates.crt}
+
+services:
+  caddy:
+    <<: *hardening
+    image: caddy:2.11.4
+    read_only: true
+    tmpfs: ["/tmp"]
+    cap_drop: ["ALL"]
+    cap_add: ["NET_BIND_SERVICE"]
+    ports:
+      - "443:443/tcp"
+    environment:
+      GOSSY_API_PUBLIC_HOST: ${GOSSY_API_PUBLIC_HOST}
+      GOSSY_MQTT_PUBLIC_HOST: ${GOSSY_MQTT_PUBLIC_HOST}
+      GOSSY_ACME_EMAIL: ${GOSSY_ACME_EMAIL:-}
+      GOSSY_TLS_PROFILE: ${GOSSY_TLS_PROFILE:-acme}
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - /srv/gossy/caddy/data:/data
+      - /srv/gossy/caddy/config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      # Real TLS request for the public API name through Caddy to the API's /healthz.
+      # (-k: the probe checks the proxy path; certificate validity is checked from outside.)
+      test: ["CMD-SHELL", "curl -fsSk --max-time 5 --resolve \"$$GOSSY_API_PUBLIC_HOST:443:127.0.0.1\" \"https://$$GOSSY_API_PUBLIC_HOST/healthz\""]
+      interval: 15s
+      timeout: 8s
+      retries: 8
+      start_period: 30s
+    deploy:
+      resources:
+        limits: {cpus: "0.50", memory: 128M}
+
+  timescaledb:
+    <<: *hardening
+    image: timescale/timescaledb:2.30.2-pg17
+    shm_size: 256m
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD_FILE: /run/gossy-secrets/db/postgres.password
+      TIMESCALEDB_TELEMETRY: "off"
+      PGDATA: /var/lib/postgresql/data/pgdata
+    command:
+      - postgres
+      - -c
+      - shared_buffers=384MB
+      - -c
+      - max_connections=60
+      - -c
+      - log_min_duration_statement=1000
+      - -c
+      - log_connections=on
+      - -c
+      - password_encryption=scram-sha-256
+    volumes:
+      - /run/gossy-secrets/db:/run/gossy-secrets/db:ro
+      - /srv/gossy/pgdata:/var/lib/postgresql/data
+      - ./postgres/10-init-roles.sh:/docker-entrypoint-initdb.d/10-init-roles.sh:ro
+      - ./postgres/sync-role-passwords.sql:/opt/gossy-sql/sync-role-passwords.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d gossy"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    deploy:
+      resources:
+        limits: {cpus: "1.00", memory: 1536M}
+
+  mosquitto-init:
+    image: eclipse-mosquitto:2.0.22
+    user: "0:0"
+    entrypoint: ["/bin/sh", "/init/init-broker.sh"]
+    network_mode: none
+    environment:
+      GOSSY_SECRETS_REVISION: ${GOSSY_SECRETS_REVISION:-}   # rotation -> passwd file rebuilt
+    logging: *logging
+    volumes:
+      - /run/gossy-secrets/mqtt:/run/gossy-secrets/mqtt:ro
+      - /srv/gossy/broker/generated:/mosquitto/generated
+      - /srv/gossy/broker/certs:/mosquitto/certs:ro
+      - ./mosquitto/init-broker.sh:/init/init-broker.sh:ro
+    restart: "no"
+
+  mosquitto:
+    <<: *hardening
+    image: eclipse-mosquitto:2.0.22
+    # The internet-facing MQTT endpoint: unprivileged from the first instruction (the image's
+    # mosquitto user; 8883 is not a privileged port), read-only root filesystem, no capabilities.
+    # It writes only to /mosquitto/data (owned by 1883, see bin/deploy.sh).
+    user: "1883:1883"
+    read_only: true
+    cap_drop: ["ALL"]
+    depends_on:
+      mosquitto-init:
+        condition: service_completed_successfully
+    ports:
+      - "8883:8883/tcp"
+    networks:
+      default:
+        aliases: ["${GOSSY_MQTT_PUBLIC_HOST}"]
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./mosquitto/acl:/mosquitto/config/acl:ro
+      - /srv/gossy/broker/generated:/mosquitto/generated:ro
+      - /srv/gossy/broker/data:/mosquitto/data
+      - /run/gossy-secrets/health:/run/gossy-secrets/health:ro   # tmpfs: healthcheck password only
+    environment:
+      # Trust store for the probe below: the system bundle (publicly trusted CAs, e.g. Let's
+      # Encrypt). The served chain file alone is not enough: it has no root certificate.
+      GOSSY_BROKER_PROBE_CA: ${GOSSY_BROKER_PROBE_CA:-/etc/ssl/certs/ca-certificates.crt}
+      GOSSY_SECRETS_REVISION: ${GOSSY_SECRETS_REVISION:-}   # rotation -> broker reloads passwd
+    healthcheck:
+      # TLS (chain verified) + authentication + SUBACK against the local listener. --insecure
+      # skips only the hostname check (the certificate names the public host; the probe dials
+      # localhost).
+      test: ["CMD-SHELL", "mosquitto_sub -h localhost -p 8883 --cafile \"$$GOSSY_BROKER_PROBE_CA\" --insecure -u svc-health -P \"$$(cat /run/gossy-secrets/health/svc-health.password)\" -V mqttv5 -t gossy/health -E -W 5"]
+      interval: 15s
+      timeout: 8s
+      retries: 8
+    deploy:
+      resources:
+        limits: {cpus: "0.50", memory: 256M}
+
+  migrate:
+    <<: *app
+    restart: "no"
+    command: ["alembic", "upgrade", "head"]
+    volumes:
+      - /run/gossy-secrets/migrate:/run/gossy-secrets:ro
+    environment:
+      <<: *app-env
+      GOSSY_DB_USER: gossy_owner
+      GOSSY_DB_PASSWORD_FILE: /run/gossy-secrets/db/owner.password
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+
+  prodcheck:
+    # Configuration validation before every deployment (bin/deploy.sh). Sees every setting the
+    # api and ingest services see; prints check names only, never secret values.
+    <<: *app
+    profiles: ["ops"]
+    restart: "no"
+    command: ["python", "-m", "gossy.prodcheck"]
+    environment:
+      <<: [*app-env, *auth-env, *mqtt-env]
+      GOSSY_DB_USER: gossy_app
+      GOSSY_DB_PASSWORD_FILE: /run/gossy-secrets/db/app.password
+      GOSSY_API_DOCS_ENABLED: "false"
+      GOSSY_TLS_PROFILE: ${GOSSY_TLS_PROFILE:-acme}
+      GOSSY_ACME_EMAIL: ${GOSSY_ACME_EMAIL:-}
+
+  api:
+    <<: *app
+    command: ["uvicorn", "--factory", "gossy.api.app:create_app", "--host", "0.0.0.0", "--port", "8000", "--no-access-log", "--proxy-headers", "--forwarded-allow-ips", "*"]
+    environment:
+      <<: [*app-env, *auth-env]
+      GOSSY_DB_USER: gossy_app
+      GOSSY_DB_PASSWORD_FILE: /run/gossy-secrets/db/app.password
+      GOSSY_API_DOCS_ENABLED: "false"
+    ports:
+      - "127.0.0.1:8000:8000"   # metrics/readiness for the CloudWatch agent only
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=2).status == 200 else 1)"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+    deploy:
+      resources:
+        limits: {cpus: "1.00", memory: 512M}
+
+  ingest:
+    <<: *app
+    command: ["uvicorn", "--factory", "gossy.ingest.app:create_app", "--host", "0.0.0.0", "--port", "8001", "--no-access-log"]
+    environment:
+      <<: [*app-env, *mqtt-env]
+      GOSSY_DB_USER: gossy_app
+      GOSSY_DB_PASSWORD_FILE: /run/gossy-secrets/db/app.password
+      GOSSY_INGEST_RETRY_PROLONGED_AFTER_S: ${GOSSY_INGEST_RETRY_PROLONGED_AFTER_S:-300}
+    ports:
+      - "127.0.0.1:8001:8001"   # metrics/readiness for the CloudWatch agent only
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      mosquitto:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8001/healthz', timeout=2).status == 200 else 1)"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+    deploy:
+      resources:
+        limits: {cpus: "0.50", memory: 384M}

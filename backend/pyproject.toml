@@ -1,0 +1,17 @@
+[project]
+name = "smart-gossyculture-backend"
+version = "0.1.0"
+description = "Smart Gossyculture / BOLLBOT backend: REST/WSS API and MQTT telemetry ingestion (Phase 2 application backend)."
+requires-python = ">=3.12"
+readme = "README.md"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+# Unit tests run by default. Integration tests need the dev Compose stack: `pytest -m integration`.
+addopts = "-m 'not integration' -ra -p no:cacheprovider"
+markers = [
+    "integration: requires the development Docker Compose stack (database, broker, api, ingest)",
+]

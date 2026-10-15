@@ -1,0 +1,11 @@
+queue bound (max_queued_messages): 10000   messages to publish: 10300
+broker before: memory 1.832MiB / 256MiB, store 4.0K
+--- ingest stopped; publishing
+{"published": 10300, "all_pubacks_received": false, "seconds": 603.1, "messages_per_second": 17.1, "puback_reason_codes": {"0 Success": 9516}, "first_seq_offset_per_code": {"0 Success": 0}}
+broker at full queue: memory 7.969MiB / 256MiB, store 3.6M
+mosquitto-1  | 2026-10-01T15:01:19: Client rehearsal-queue-overflow closed its connection.
+--- starting ingest; waiting for the queue to drain
+ingest received after restart: 9519
+{"published": 10300, "stored": 9518, "lost": 782, "duplicates": 0, "stored_offsets": "0..9517", "lost_offsets": "9518..10299", "lost_is_one_contiguous_tail": true}
+broker after drain: memory 2.164MiB / 256MiB, store 4.0K
+queue overflow test finished

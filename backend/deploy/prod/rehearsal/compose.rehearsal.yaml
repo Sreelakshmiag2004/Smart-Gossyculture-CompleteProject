@@ -1,0 +1,65 @@
+# LOCAL REHEARSAL ONLY - overrides deploy/prod/compose.yaml where the rehearsal host differs
+# from EC2:
+#   * logs: json-file instead of CloudWatch (awslogs needs AWS credentials)
+#   * TLS: Caddy's internal CA instead of Let's Encrypt (no public domain exists - U-6); the
+#     hostnames are reserved *.invalid names that can never exist publicly
+#   * a tests service on the stack network (integration + edge tests)
+# Everything else (images, users, limits, ports, secrets layout, scripts) is unchanged.
+services:
+  caddy:
+    logging: !override {driver: json-file, options: {max-size: 10m, max-file: "3"}}
+    networks:
+      default:
+        aliases: ["${GOSSY_API_PUBLIC_HOST}"]
+  timescaledb:
+    logging: !override {driver: json-file, options: {max-size: 10m, max-file: "3"}}
+  mosquitto-init:
+    logging: !override {driver: json-file, options: {max-size: 10m, max-file: "3"}}
+  mosquitto:
+    logging: !override {driver: json-file, options: {max-size: 10m, max-file: "3"}}
+    # Rehearsal trust anchor = Caddy's internal root (production: the system CA bundle).
+    environment:
+      GOSSY_BROKER_PROBE_CA: /run/rehearsal-ca/root.crt
+    volumes:
+      - /srv/gossy/broker/certs/internal-root.crt:/run/rehearsal-ca/root.crt:ro
+  migrate:
+    logging: !override {driver: json-file, options: {max-size: 10m, max-file: "3"}}
+  api:
+    logging: !override {driver: json-file, options: {max-size: 10m, max-file: "3"}}
+  ingest:
+    logging: !override {driver: json-file, options: {max-size: 10m, max-file: "3"}}
+    environment:
+      GOSSY_MQTT_CA_FILE: /run/rehearsal-ca/root.crt
+    volumes:
+      - /srv/gossy/broker/certs/internal-root.crt:/run/rehearsal-ca/root.crt:ro
+  prodcheck:
+    logging: !override {driver: json-file, options: {max-size: 10m, max-file: "3"}}
+
+  tests:
+    image: gossy-backend:dev
+    profiles: ["test"]
+    user: "0:0"   # reads root-owned 0400 test-device passwords from the secrets tmpfs
+    logging: {driver: json-file}
+    command: ["pytest", "-m", "integration", "-q"]
+    environment:
+      GOSSY_ENVIRONMENT: staging
+      GOSSY_LOG_JSON: "true"
+      GOSSY_DB_HOST: timescaledb
+      GOSSY_DB_PORT: "5432"
+      GOSSY_DB_NAME: gossy
+      GOSSY_DB_USER: gossy_app
+      GOSSY_DB_PASSWORD_FILE: /run/gossy-secrets-app/db/app.password
+      GOSSY_TEST_API_URL: http://api:8000
+      GOSSY_TEST_INGEST_URL: http://ingest:8001
+      GOSSY_TEST_WS_URL: ws://api:8000/api/v1/ws
+      GOSSY_TEST_MQTT_HOST: ${GOSSY_MQTT_PUBLIC_HOST}
+      GOSSY_TEST_MQTT_PORT: "8883"
+      GOSSY_TEST_SECRETS_DIR: /run/test-secrets
+      GOSSY_TEST_EDGE_API_HOST: ${GOSSY_API_PUBLIC_HOST}
+      GOSSY_TEST_EDGE_MQTT_HOST: ${GOSSY_MQTT_PUBLIC_HOST}
+      GOSSY_TEST_EDGE_CA_FILE: /run/test-secrets/certs/ca.crt
+    volumes:
+      - /run/gossy-secrets/app:/run/gossy-secrets-app:ro
+      - /run/gossy-secrets/mqtt:/run/test-secrets/mqtt:ro
+      - /run/gossy-secrets/app/auth:/run/test-secrets/auth:ro
+      - /srv/gossy/broker/certs/internal-root.crt:/run/test-secrets/certs/ca.crt:ro

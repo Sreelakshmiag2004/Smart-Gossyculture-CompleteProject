@@ -1,0 +1,15 @@
+prolonged threshold in this rehearsal: GOSSY_INGEST_RETRY_PROLONGED_AFTER_S=30 (production: 300)
+14:43:27 baseline                           condition=ok        database_up=1 retry_s=0 dead_letters=0 blocked=0
+--- 1+2: database stopped while a message is in flight
+14:43:47 temporary retry                    condition=retrying  database_up=0 retry_s=9.66596 dead_letters=0 blocked=0
+14:44:18 prolonged blockage (>= threshold)  condition=prolonged database_up=0 retry_s=39.8965 dead_letters=0 blocked=0
+14:44:36 recovered after database start     condition=ok        database_up=1 retry_s=0 dead_letters=0 blocked=0
+{"result": "PASS", "messages": 3, "missing": [], "effects": {"ledger": {"rows": 3, "expected": 3, "max_per_msg": 1}, "te
+--- 3: dead letter (INSERT on telemetry revoked)
+14:45:31 after dead letter                  condition=ok        database_up=1 retry_s=0 dead_letters=1 blocked=0
+dead-letter rows with full payload in the last 5 min: 1
+--- 4: permanent block (dead-letter store also refused)
+14:45:56 permanent blockage                 condition=blocked   database_up=1 retry_s=0 dead_letters=1 blocked=1
+14:45:57 recovered after grants restored    condition=ok        database_up=1 retry_s=0 dead_letters=1 blocked=1
+{"result": "PASS", "messages": 3, "missing": [], "effects": {"ledger": {"rows": 3, "expected": 3, "max_per_msg": 1}, "te
+alert walkthrough finished: 0 problem(s)

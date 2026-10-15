@@ -1,0 +1,6 @@
+# Copy to production.backend.hcl (git-ignored) and fill in the bucket created by ../bootstrap.
+bucket       = "<state bucket from bootstrap output>"
+key          = "gossy/production/terraform.tfstate"
+region       = "ap-south-1"
+encrypt      = true
+use_lockfile = true

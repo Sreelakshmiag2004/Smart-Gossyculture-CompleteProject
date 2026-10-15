@@ -1,0 +1,10 @@
+[Unit]
+Description=Copy renewed MQTT TLS certificate from Caddy to Mosquitto
+Requires=gossy.service
+After=gossy.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/gossy/bin/sync-broker-cert.sh
+StandardOutput=append:/var/log/gossy/ops.log
+StandardError=append:/var/log/gossy/ops.log

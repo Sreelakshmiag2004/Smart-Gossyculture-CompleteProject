@@ -1,0 +1,222 @@
+== services
+SERVICE          IMAGE                                        STATUS                        PORTS
+api              gossy-backend:0.3.0-rehearsal.202610011350   Up About a minute (healthy)   127.0.0.1:8000->8000/tcp
+caddy            caddy:2.11.4                                 Up 59 seconds (healthy)       80/tcp, 2019/tcp, 0.0.0.0:443->443/tcp, [::]:443->443/tcp, 443/udp
+ingest           gossy-backend:0.3.0-rehearsal.202610011350   Up 32 seconds (healthy)       8000/tcp, 127.0.0.1:8001->8001/tcp
+migrate          gossy-backend:0.3.0-rehearsal.202610011350   Exited (0) 43 seconds ago     
+mosquitto        eclipse-mosquitto:2.0.22                     Up 49 seconds (healthy)       1883/tcp, 0.0.0.0:8883->8883/tcp, [::]:8883->8883/tcp
+mosquitto-init   eclipse-mosquitto:2.0.22                     Exited (0) 50 seconds ago     
+timescaledb      timescale/timescaledb:2.30.2-pg17            Up About a minute (healthy)   5432/tcp
+== api healthz/readyz (loopback)
+{"status":"ok"}
+{"status":"ready","checks":{"database":{"ok":true,"detail":null},"timescaledb":{"ok":true,"detail":"2.30.2"},"migrations":{"ok":true,"detail":"current=0002 expected=0002"},"event_listener":{"ok":true,"detail":"listening"}},"info":{"otpMode":"test","websocketSubscribers":0,"lastEventCursor":0}}
+== ingest healthz/readyz (loopback)
+{"status":"ok"}
+{"status":"ready","checks":{"database":{"ok":true,"detail":null},"mqtt":{"ok":true,"detail":"connected"}},"info":{"ingest":{"received":0,"ingested":0,"duplicates":0,"rejected":0,"dead_lettered":0,"transient_retries":0,"blocked":0,"last_message_at":null,"retrying_since":null,"blocked_since":null,"last_dead_letter_at":null},"mqtt_connect_count":1,"mqtt_acked":0,"mqtt_ack_failures":0,"fault_injection":false,"condition":"ok"}}
+== database / timescaledb
+postgres 17.11
+timescaledb 2.30.2
+alembic 0002
+hypertable telemetry chunks=0
+hypertable device_events chunks=0
+password_encryption scram-sha-256
+role gossy_app super=false createdb=false
+role gossy_owner super=false createdb=false
+app privileges on telemetry: INSERT,SELECT,UPDATE
+== app role cannot DELETE / DDL (expect permission errors)
+ERROR:  permission denied for table telemetry
+ERROR:  permission denied for schema public
+== limits / restart policy / hardening per container
+/gossy-api-1 restart=unless-stopped mem=536870912 nanocpus=1000000000 readonly=true capdrop=[ALL] capadd=<no value> secopt=[no-new-privileges:true] user=gossy restarts=0
+/gossy-caddy-1 restart=unless-stopped mem=134217728 nanocpus=500000000 readonly=true capdrop=[ALL] capadd=[CAP_NET_BIND_SERVICE] secopt=[no-new-privileges:true] user= restarts=0
+/gossy-ingest-1 restart=unless-stopped mem=402653184 nanocpus=500000000 readonly=true capdrop=[ALL] capadd=<no value> secopt=[no-new-privileges:true] user=gossy restarts=0
+/gossy-mosquitto-1 restart=unless-stopped mem=268435456 nanocpus=500000000 readonly=true capdrop=[ALL] capadd=<no value> secopt=[no-new-privileges:true] user=1883:1883 restarts=0
+/gossy-timescaledb-1 restart=unless-stopped mem=1610612736 nanocpus=1000000000 readonly=false capdrop=<no value> capadd=<no value> secopt=[no-new-privileges:true] user= restarts=0
+== listening sockets on the host (all interfaces vs loopback)
+0.0.0.0:443
+0.0.0.0:8883
+127.0.0.1:8000
+127.0.0.1:8001
+[::]:443
+[::]:8883
+== docker API: tcp listeners for dockerd
+none (unix socket only)
+== secrets tmpfs
+tmpfs on /run/gossy-secrets type tmpfs (rw,nosuid,nodev,noexec,relatime,size=4096k,mode=711)
+  /run/gossy-secrets:
+  total 0
+  dr-x------ 5 10001 10001 100 Oct  1 14:15 app
+  dr-x------ 2    70    70 100 Oct  1 14:15 db
+  dr-x------ 3 10001 10001  60 Oct  1 14:15 migrate
+  dr-x------ 2     0     0 120 Oct  1 14:15 mqtt
+  
+  /run/gossy-secrets/app:
+  total 0
+  dr-x------ 2 10001 10001 100 Oct  1 14:15 auth
+  dr-x------ 2 10001 10001  60 Oct  1 14:15 db
+  dr-x------ 2 10001 10001  60 Oct  1 14:15 mqtt
+  
+  /run/gossy-secrets/db:
+  total 12
+  -r-------- 1 70 70 40 Oct  1 14:15 app.password
+  -r-------- 1 70 70 40 Oct  1 14:15 owner.password
+  -r-------- 1 70 70 40 Oct  1 14:15 postgres.password
+== secrets on persistent disk? (search /srv/gossy, /opt/gossy, /etc for every rendered secret value; pgdata excluded: it stores SCRAM verifiers, checked below)
+  FOUND: /srv/gossy/broker/generated/chain.crt
+  FOUND: /srv/gossy/broker/generated/cert.crt
+  FOUND: /srv/gossy/broker/generated/cert.key
+  FOUND: /srv/gossy/broker/generated/passwd
+  FOUND: /srv/gossy/broker/generated/health.password
+  FOUND: /srv/gossy/broker/data/mosquitto.db
+  FOUND: /srv/gossy/broker/certs/internal-root.crt
+  FOUND: /srv/gossy/broker/certs/cert.crt
+  FOUND: /srv/gossy/broker/certs/cert.key
+  FOUND: /srv/gossy/caddy/data/caddy/instance.uuid
+  FOUND: /srv/gossy/caddy/data/caddy/certificates/local/api.rehearsal.invalid/api.rehearsal.invalid.key
+  FOUND: /srv/gossy/caddy/data/caddy/certificates/local/api.rehearsal.invalid/api.rehearsal.invalid.json
+  FOUND: /srv/gossy/caddy/data/caddy/certificates/local/api.rehearsal.invalid/api.rehearsal.invalid.crt
+  FOUND: /srv/gossy/caddy/data/caddy/certificates/local/mqtt.rehearsal.invalid/mqtt.rehearsal.invalid.key
+  FOUND: /srv/gossy/caddy/data/caddy/certificates/local/mqtt.rehearsal.invalid/mqtt.rehearsal.invalid.json
+  FOUND: /srv/gossy/caddy/data/caddy/certificates/local/mqtt.rehearsal.invalid/mqtt.rehearsal.invalid.crt
+  FOUND: /srv/gossy/caddy/data/caddy/last_clean.json
+  FOUND: /srv/gossy/caddy/data/caddy/pki/authorities/local/root.key
+  FOUND: /srv/gossy/caddy/data/caddy/pki/authorities/local/intermediate.key
+  FOUND: /srv/gossy/caddy/data/caddy/pki/authorities/local/root.crt
+  FOUND: /srv/gossy/caddy/data/caddy/pki/authorities/local/intermediate.crt
+  FOUND: /srv/gossy/caddy/config/caddy/autosave.json
+  FOUND: /opt/gossy/bin/sync-broker-cert.sh
+  FOUND: /opt/gossy/bin/deploy.sh
+  FOUND: /opt/gossy/bin/restore.sh
+  FOUND: /opt/gossy/bin/backup.sh
+  FOUND: /opt/gossy/bin/render-config.sh
+  FOUND: /opt/gossy/bin/render-secrets.sh
+  FOUND: /opt/gossy/mosquitto/mosquitto.conf
+  FOUND: /opt/gossy/mosquitto/init-broker.sh
+  FOUND: /opt/gossy/mosquitto/acl
+  FOUND: /opt/gossy/compose.yaml
+  FOUND: /opt/gossy/scripts/durability_check.sh
+  FOUND: /opt/gossy/postgres/10-init-roles.sh
+  FOUND: /opt/gossy/postgres/sync-role-passwords.sql
+  FOUND: /opt/gossy/caddy/Caddyfile
+  FOUND: /opt/gossy/cloudwatch/amazon-cloudwatch-agent.json
+  FOUND: /opt/gossy/cloudwatch/prometheus.yaml
+  FOUND: /opt/gossy/rehearsal/Dockerfile.host
+  FOUND: /opt/gossy/rehearsal/rehearsal.env
+  FOUND: /opt/gossy/rehearsal/compose.rehearsal.yaml
+  FOUND: /opt/gossy/rehearsal/alert-walkthrough.sh
+  FOUND: /opt/gossy/rehearsal/run-rehearsal.sh
+  FOUND: /opt/gossy/rehearsal/make-secrets.py
+  FOUND: /etc/secfixes.d/alpine
+  FOUND: /etc/logrotate.d/acpid
+  FOUND: /etc/modprobe.d/aliases.conf
+  FOUND: /etc/modprobe.d/blacklist.conf
+  FOUND: /etc/modprobe.d/i386.conf
+  FOUND: /etc/crontabs/root
+  FOUND: /etc/protocols
+  FOUND: /etc/fstab
+  FOUND: /etc/motd
+  FOUND: /etc/profile
+  FOUND: /etc/shells
+  FOUND: /etc/profile.d/README
+  FOUND: /etc/profile.d/color_prompt.sh.disabled
+  FOUND: /etc/profile.d/20locale.sh
+  FOUND: /etc/profile.d/00-bashrc.sh
+  FOUND: /etc/hostname
+  FOUND: /etc/group
+  FOUND: /etc/shadow
+  FOUND: /etc/sysctl.conf
+  FOUND: /etc/modules
+  FOUND: /etc/hosts
+  FOUND: /etc/apk/arch
+  FOUND: /etc/apk/repositories
+  FOUND: /etc/apk/keys/alpine-devel@lists.alpinelinux.org-4a6a0840.rsa.pub
+  FOUND: /etc/apk/keys/alpine-devel@lists.alpinelinux.org-6165ee59.rsa.pub
+  FOUND: /etc/apk/keys/alpine-devel@lists.alpinelinux.org-5261cecb.rsa.pub
+  FOUND: /etc/apk/world
+  FOUND: /etc/apk/protected_paths.d/ca-certificates.list
+  FOUND: /etc/ssl/openssl.cnf
+  FOUND: /etc/ssl/ct_log_list.cnf.dist
+  FOUND: /etc/ssl/certs/ca-certificates.crt
+  FOUND: /etc/ssl/ct_log_list.cnf
+  FOUND: /etc/ssl/openssl.cnf.dist
+  FOUND: /etc/inittab
+  FOUND: /etc/network/if-up.d/dad
+  FOUND: /etc/alpine-release
+  FOUND: /etc/nsswitch.conf
+  FOUND: /etc/issue
+  FOUND: /etc/securetty
+  FOUND: /etc/services
+  FOUND: /etc/busybox-paths.d/busybox
+  FOUND: /etc/passwd
+  FOUND: /etc/udhcpc/udhcpc.conf
+  FOUND: /etc/gossy/gossy.env
+  FOUND: /etc/gossy/release.env
+  FOUND: /etc/resolv.conf
+  FOUND: /etc/bash/bashrc
+  FOUND: /etc/inputrc
+  FOUND: /etc/passwd-
+  FOUND: /etc/group-
+  FOUND: /etc/shadow-
+  FOUND: /etc/subuid
+  FOUND: /etc/subgid
+  FOUND: /etc/ethertypes
+  FOUND: /etc/security/pam_env.conf
+  FOUND: /etc/security/time.conf
+  FOUND: /etc/security/pwhistory.conf
+  FOUND: /etc/security/faillock.conf
+  FOUND: /etc/security/namespace.conf
+  FOUND: /etc/security/access.conf
+  FOUND: /etc/security/group.conf
+  FOUND: /etc/security/namespace.init
+  FOUND: /etc/security/limits.conf
+  FOUND: /etc/environment
+  FOUND: /etc/ssh/ssh_config
+  FOUND: /etc/ssh/moduli
+  FOUND: /etc/terminfo/l/linux
+  FOUND: /etc/terminfo/k/konsole
+  FOUND: /etc/terminfo/k/konsole-256color
+  FOUND: /etc/terminfo/k/konsole-linux
+  FOUND: /etc/terminfo/x/xterm-color
+  FOUND: /etc/terminfo/x/xterm-xfree86
+  FOUND: /etc/terminfo/x/xterm-256color
+  FOUND: /etc/terminfo/x/xterm
+  FOUND: /etc/terminfo/v/vt220
+  FOUND: /etc/terminfo/v/vt100
+  FOUND: /etc/terminfo/v/vte-256color
+  FOUND: /etc/terminfo/v/vt52
+  FOUND: /etc/terminfo/v/vt102
+  FOUND: /etc/terminfo/v/vte
+  FOUND: /etc/terminfo/p/putty
+  FOUND: /etc/terminfo/p/putty-256color
+  FOUND: /etc/terminfo/r/rxvt
+  FOUND: /etc/terminfo/r/rxvt-256color
+  FOUND: /etc/terminfo/d/dumb
+  FOUND: /etc/terminfo/t/terminology-1.0.0
+  FOUND: /etc/terminfo/t/terminator
+  FOUND: /etc/terminfo/t/terminology
+  FOUND: /etc/terminfo/t/terminology-0.6.1
+  FOUND: /etc/terminfo/t/terminology-1.8.1
+  FOUND: /etc/terminfo/t/tmux
+  FOUND: /etc/terminfo/t/tmux-256color
+  FOUND: /etc/terminfo/g/gnome
+  FOUND: /etc/terminfo/g/gnome-256color
+  FOUND: /etc/terminfo/s/st-16color
+  FOUND: /etc/terminfo/s/st-0.7
+  FOUND: /etc/terminfo/s/st-256color
+  FOUND: /etc/terminfo/s/screen-256color
+  FOUND: /etc/terminfo/s/sun
+  FOUND: /etc/terminfo/s/st-direct
+  FOUND: /etc/terminfo/s/st-0.6
+  FOUND: /etc/terminfo/s/st-0.8.5
+  FOUND: /etc/terminfo/s/screen
+  FOUND: /etc/terminfo/s/st-0.8
+  FOUND: /etc/terminfo/a/alacritty
+  FOUND: /etc/terminfo/a/ansi
+  FOUND: /etc/ca-certificates/update.d/certhash
+  FOUND: /etc/ca-certificates.conf
+  role password storage: postgres=SCRAM-SHA-256 gossy_owner=SCRAM-SHA-256 gossy_app=SCRAM-SHA-256
+  broker password file: $7$  (hash prefixes only)
+== time sync (host clock vs container clocks, seconds)
+1790864259
+1790864260
+1790864260

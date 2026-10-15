@@ -1,0 +1,84 @@
+# Runs every test suite on each push and pull request.
+name: tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bollbot:
+    name: BollBot (cart, ML, farm rules) + ESP32 firmware
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install pyyaml numpy opencv-python-headless paho-mqtt pillow
+      - name: Python tests
+        run: python -m unittest discover -s bollbot/tests -t . -v
+      - name: Firmware tests (g++)
+        run: bash bollbot/firmware/esp32/test/run_tests.sh
+
+  backend-unit:
+    name: Backend unit tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install -r requirements-dev.txt -c constraints.txt
+      - name: OpenAPI file up to date
+        run: |
+          PYTHONPATH=src python -m gossy.api.export_openapi > /tmp/openapi.json
+          if ! diff -q docs/openapi.json /tmp/openapi.json; then
+            echo "::error::docs/openapi.json is out of date. Run: cd backend && PYTHONPATH=src python -m gossy.api.export_openapi > docs/openapi.json"
+            diff -u docs/openapi.json /tmp/openapi.json | head -80
+            exit 1
+          fi
+      - name: Unit tests
+        run: pytest
+
+  backend-integration:
+    name: Backend integration tests (Postgres/TimescaleDB + Mosquitto in Docker)
+    runs-on: ubuntu-latest
+    needs: backend-unit
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create development secrets
+        run: docker compose -f deploy/dev/compose.yaml --profile setup run --rm bootstrap
+      - name: Integration tests
+        run: docker compose -f deploy/dev/compose.yaml --profile test run --rm tests
+      - name: Service logs on failure
+        if: failure()
+        run: docker compose -f deploy/dev/compose.yaml logs --no-color --tail=200
+      - name: Stop
+        if: always()
+        run: docker compose -f deploy/dev/compose.yaml down -v
+
+  flutter:
+    name: Flutter app
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze --no-fatal-infos
+      - run: flutter test

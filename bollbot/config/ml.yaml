@@ -1,0 +1,27 @@
+# ML settings (spec Section 6). Change here, not in scripts.
+train:
+  base_model: yolov8n.pt      # COCO-pretrained YOLOv8 nano
+  imgsz: 416
+  epochs: 150
+  patience: 30                # early stopping
+  batch: 16
+  seed: 0
+  # Ultralytics default augmentations (mosaic, HSV, horizontal flip) are kept.
+
+ablations:                    # E1: optional extra runs
+  imgsz: [320, 512]
+
+targets:                      # NFR1-NFR3 (held-out test farm)
+  map50_min: 0.80
+  open_boll_recall_min: 0.85
+  fps_min: 3.0
+  count_mape_max_pct: 15.0
+
+rare_class:
+  # Classes with fewer TRAIN instances than this are reported as
+  # 'alert-only' (needs human confirmation in the app), per spec Section 6.
+  min_train_instances: 100
+
+export:
+  formats: [ncnn, tflite, openvino]   # Pi fallback, phone, OAK-D (via blob conversion)
+  tflite_int8: true

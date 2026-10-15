@@ -1,0 +1,42 @@
+[gossy-rehearsal-host] loading images (stands in for ECR pull)
+Loaded image: gossy-backend:0.3.0-rehearsal.202610011350
+Loaded image: gossy-backend:dev
+Loaded image: timescale/timescaledb:2.30.2-pg17
+Loaded image: eclipse-mosquitto:2.0.22
+Loaded image: caddy:2.11.4
+[gossy-rehearsal-host] installing deploy bundle
+bundle installed (no systemd/CloudWatch agent: rehearsal)
+[gossy-rehearsal-host] deploy.sh 0.3.0-rehearsal.202610011350
+config: no GOSSY_CONFIG_PARAMETER - keeping /etc/gossy/gossy.env as it is
+2026-10-01T14:15:42Z deploy: rendering secrets
+secrets rendered for staging: ['db_app_password', 'db_owner_password', 'db_postgres_password', 'jwt_signing_key', 'mqtt_svc_health_password', 'mqtt_svc_ingest_password', 'otp_hmac_key', 'test_otp_code'] + 2 test device(s)
+2026-10-01T14:15:42Z deploy: validating configuration (gossy.prodcheck)
+PASS  environment is staging or production: staging
+PASS  api settings load: loaded
+PASS  auth settings load: loaded
+PASS  db settings load: loaded
+PASS  mqtt settings load: loaded
+PASS  ingest settings load: loaded
+PASS  service startup rules: api/auth/db/mqtt/ingest rules pass
+PASS  API docs disabled: disabled
+PASS  OTP test mode off in production: test mode ON
+PASS  failure injection disabled: disabled
+PASS  JWT signing key: ok
+PASS  OTP/claim HMAC key: ok
+PASS  database password: ok
+PASS  MQTT ingest password: ok
+PASS  MQTT CA is not the development CA: ok
+PASS  no development-secret marker next to secrets: none
+PASS  GOSSY_API_PUBLIC_HOST is a real domain: api.rehearsal.invalid
+PASS  GOSSY_MQTT_PUBLIC_HOST is a real domain: mqtt.rehearsal.invalid
+PASS  publicly trusted TLS in production (profile acme): internal
+PASS  ACME contact e-mail set: unset
+PASS  image tag pinned (not latest/dev): 0.3.0-rehearsal.202610011350
+prodcheck: 21 passed, 0 failed
+2026-10-01T14:15:51Z deploy: starting database, migrations, API and TLS proxy
+2026-10-01T14:16:03Z deploy: reconciling database role passwords with the current secrets
+role passwords reconciled (postgres, gossy_owner, gossy_app)
+2026-10-01T14:16:34Z deploy: installing broker certificate
+broker certificate updated from /srv/gossy/caddy/data/caddy/certificates/local/mqtt.rehearsal.invalid/mqtt.rehearsal.invalid.crt
+2026-10-01T14:16:34Z deploy: starting broker and ingest
+2026-10-01T14:17:07Z deploy: deployed 0.3.0-rehearsal.202610011350; all services healthy and ready

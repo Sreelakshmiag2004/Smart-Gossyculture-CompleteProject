@@ -1,0 +1,15 @@
+# Runtime dependencies for the Smart Gossyculture backend (API + ingest).
+# Transitive versions are pinned in constraints.txt; install with:
+#   pip install -r requirements.txt -c constraints.txt
+fastapi==0.141.1
+uvicorn==0.54.0
+pydantic==2.13.5
+pydantic-settings==2.15.0
+SQLAlchemy[asyncio]==2.1.1
+psycopg[binary]==3.3.6
+alembic==1.20.0
+aiomqtt==2.5.1
+paho-mqtt==2.1.0
+# Phase 2: signed access tokens (HS256) and the WebSocket protocol implementation for uvicorn.
+PyJWT==2.15.1
+websockets==17.1

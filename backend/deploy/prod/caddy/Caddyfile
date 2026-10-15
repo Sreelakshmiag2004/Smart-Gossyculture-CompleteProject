@@ -1,0 +1,68 @@
+# Smart Gossyculture reverse proxy (staging/production). TLS for the public API + WebSocket.
+#
+# Certificates: Let's Encrypt via the TLS-ALPN-01 challenge on 443 only (the HTTP challenge is
+# disabled, so port 80 is not opened). Caddy also obtains the certificate for the MQTT host;
+# bin/sync-broker-cert.sh copies it to Mosquitto. Domains come from /etc/gossy/gossy.env -
+# none is configured until U-6 (domain/TLS) is decided.
+#
+# GOSSY_TLS_PROFILE=acme      production/staging (publicly trusted certificates)
+# GOSSY_TLS_PROFILE=internal  LOCAL REHEARSAL ONLY (Caddy's private CA; never on a public host)
+
+{
+	admin off
+	# No port-80 listener at all (no HTTP->HTTPS redirect server): only 443 is used/opened.
+	auto_https disable_redirects
+	servers {
+		protocols h1 h2
+	}
+}
+
+# An empty GOSSY_ACME_EMAIL makes this snippet invalid, so Caddy refuses to start rather than
+# run publicly without an ACME contact (prodcheck also checks it).
+(tls-acme) {
+	tls {
+		issuer acme {
+			email {$GOSSY_ACME_EMAIL}
+			disable_http_challenge
+		}
+	}
+}
+
+(tls-internal) {
+	tls internal
+}
+
+(headers) {
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+		-Server
+	}
+}
+
+{$GOSSY_API_PUBLIC_HOST} {
+	import tls-{$GOSSY_TLS_PROFILE}
+	import headers
+	# Only the public API surface. /readyz, /metrics and /docs are NOT exposed (loopback only).
+	@public {
+		path /api/v1/* /healthz
+	}
+	handle @public {
+		reverse_proxy api:8000
+	}
+	handle {
+		respond "Not Found" 404
+	}
+	log {
+		output stdout
+		format json
+	}
+}
+
+# Certificate for the MQTT broker name (served to MQTT clients by Mosquitto, not by Caddy).
+{$GOSSY_MQTT_PUBLIC_HOST} {
+	import tls-{$GOSSY_TLS_PROFILE}
+	import headers
+	respond "Not Found" 404
+}

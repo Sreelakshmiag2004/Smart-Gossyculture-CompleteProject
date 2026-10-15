@@ -1,0 +1,15 @@
+# Never commit secrets. Development secrets live only in the Docker volume created by
+# `docker compose ... --profile setup run --rm bootstrap`, never in this directory.
+.env
+.env.*
+!.env.dev.example
+*.pem
+*.key
+*.crt
+*.password
+passwd
+
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/

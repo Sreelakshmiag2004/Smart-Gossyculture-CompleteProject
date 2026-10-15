@@ -1,0 +1,29 @@
+== ingest /metrics (loopback 8001)
+gossy_ingest_received_total 176
+gossy_ingest_ingested_total 130
+gossy_ingest_duplicates_total 40
+gossy_ingest_rejected_total 6
+gossy_ingest_dead_letters_total 0
+gossy_ingest_transient_retries_total 0
+gossy_ingest_blocked_total 0
+gossy_ingest_mqtt_acked_total 176
+gossy_ingest_mqtt_ack_failures_total 0
+gossy_ingest_consumer_errors_total 0
+gossy_ingest_mqtt_connected 1
+gossy_ingest_mqtt_connects_total 1
+gossy_ingest_retry_duration_seconds 0
+gossy_ingest_last_message_age_seconds 26.426
+gossy_ingest_condition{condition="ok"} 1
+gossy_ingest_condition{condition="retrying"} 0
+gossy_ingest_condition{condition="prolonged"} 0
+gossy_ingest_condition{condition="blocked"} 0
+gossy_database_up 1
+== api /metrics (loopback 8000)
+gossy_api_http_requests_total{status="2xx"} 404
+gossy_api_http_requests_total{status="4xx"} 121
+gossy_api_unhandled_errors_total 0
+gossy_api_websocket_subscribers 0
+gossy_api_event_listener_connected 1
+gossy_api_event_listener_connects_total 1
+gossy_api_last_event_cursor 170
+gossy_database_up 1
